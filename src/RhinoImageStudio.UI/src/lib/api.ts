@@ -1,6 +1,39 @@
 import { Project, Capture, Generation, CreateProjectRequest, UpdateProjectRequest, GenerateRequest, ReferenceImage, GenerationDebugInfo, MaskLayerPayload, Job } from './types';
 
 const API_BASE = '/api';
+const LOCAL_TOKEN_HEADER = 'X-Rhino-Bridge-Token';
+
+declare global {
+  interface Window {
+    __RHINO_LOCAL_TOKEN?: string;
+  }
+}
+
+let cachedLocalToken: string | null =
+  typeof window !== 'undefined' ? window.__RHINO_LOCAL_TOKEN ?? null : null;
+
+async function ensureLocalToken(): Promise<string | null> {
+  if (cachedLocalToken) return cachedLocalToken;
+
+  try {
+    const res = await fetch(`${API_BASE}/bootstrap`);
+    if (res.ok) {
+      const data = await res.json() as { token: string };
+      cachedLocalToken = data.token;
+    }
+  } catch {
+    // Backend may be unavailable during isolated UI dev
+  }
+
+  return cachedLocalToken;
+}
+
+async function apiFetch(input: string, init: RequestInit = {}): Promise<Response> {
+  const token = await ensureLocalToken();
+  const headers = new Headers(init.headers);
+  if (token) headers.set(LOCAL_TOKEN_HEADER, token);
+  return fetch(input, { ...init, headers });
+}
 
 async function apiError(res: Response, fallback: string): Promise<never> {
   try {
@@ -33,7 +66,7 @@ export const api = {
       return res.json();
     },
     setGeminiApiKey: async (apiKey: string): Promise<void> => {
-      const res = await fetch(`${API_BASE}/config/gemini-api-key`, {
+      const res = await apiFetch(`${API_BASE}/config/gemini-api-key`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ apiKey }),
@@ -41,7 +74,7 @@ export const api = {
       if (!res.ok) return apiError(res, 'Failed to set Gemini API key');
     },
     setFalApiKey: async (apiKey: string): Promise<void> => {
-      const res = await fetch(`${API_BASE}/config/fal-api-key`, {
+      const res = await apiFetch(`${API_BASE}/config/fal-api-key`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ apiKey }),
@@ -70,7 +103,7 @@ export const api = {
       };
     },
     create: async (data: CreateProjectRequest): Promise<Project> => {
-      const res = await fetch(`${API_BASE}/projects`, {
+      const res = await apiFetch(`${API_BASE}/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -83,13 +116,13 @@ export const api = {
       };
     },
     delete: async (id: string): Promise<void> => {
-      const res = await fetch(`${API_BASE}/projects/${id}`, {
+      const res = await apiFetch(`${API_BASE}/projects/${id}`, {
         method: 'DELETE',
       });
       if (!res.ok) return apiError(res, 'Failed to delete project');
     },
     togglePin: async (id: string, pinned: boolean): Promise<Project> => {
-      const res = await fetch(`${API_BASE}/projects/${id}`, {
+      const res = await apiFetch(`${API_BASE}/projects/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isPinned: pinned }),
@@ -102,7 +135,7 @@ export const api = {
       };
     },
     update: async (id: string, data: UpdateProjectRequest): Promise<Project> => {
-      const res = await fetch(`${API_BASE}/projects/${id}`, {
+      const res = await apiFetch(`${API_BASE}/projects/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -122,7 +155,7 @@ export const api = {
       return res.json();
     },
     delete: async (id: string): Promise<void> => {
-      const res = await fetch(`${API_BASE}/captures/${id}`, {
+      const res = await apiFetch(`${API_BASE}/captures/${id}`, {
         method: 'DELETE',
       });
       if (!res.ok) return apiError(res, 'Failed to delete capture');
@@ -144,7 +177,7 @@ export const api = {
     upload: async (projectId: string, file: File): Promise<ReferenceImage> => {
       const formData = new FormData();
       formData.append('image', file);
-      const res = await fetch(`${API_BASE}/projects/${projectId}/references`, {
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/references`, {
         method: 'POST',
         body: formData,
       });
@@ -152,7 +185,7 @@ export const api = {
       return res.json();
     },
     delete: async (id: string): Promise<void> => {
-      const res = await fetch(`${API_BASE}/references/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`${API_BASE}/references/${id}`, { method: 'DELETE' });
       if (!res.ok) return apiError(res, 'Failed to delete reference');
     },
   },
@@ -183,7 +216,7 @@ export const api = {
       };
     },
     create: async (data: GenerateRequest): Promise<Generation> => {
-      const res = await fetch(`${API_BASE}/generate`, {
+      const res = await apiFetch(`${API_BASE}/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -192,19 +225,19 @@ export const api = {
       return res.json();
     },
     archive: async (id: string): Promise<void> => {
-      const res = await fetch(`${API_BASE}/generations/${id}`, {
+      const res = await apiFetch(`${API_BASE}/generations/${id}`, {
         method: 'DELETE',
       });
       if (!res.ok) return apiError(res, 'Failed to archive generation');
     },
     restore: async (id: string): Promise<void> => {
-      const res = await fetch(`${API_BASE}/generations/${id}/restore`, {
+      const res = await apiFetch(`${API_BASE}/generations/${id}/restore`, {
         method: 'PUT',
       });
       if (!res.ok) return apiError(res, 'Failed to restore generation');
     },
     permanentDelete: async (id: string): Promise<void> => {
-      const res = await fetch(`${API_BASE}/generations/${id}/permanent`, {
+      const res = await apiFetch(`${API_BASE}/generations/${id}/permanent`, {
         method: 'DELETE',
       });
       if (!res.ok) return apiError(res, 'Failed to permanently delete generation');
@@ -227,7 +260,7 @@ export const api = {
   },
   multiAngle: {
     create: async (data: MultiAngleRequest): Promise<void> => {
-      const res = await fetch(`${API_BASE}/multi-angle`, {
+      const res = await apiFetch(`${API_BASE}/multi-angle`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -237,7 +270,7 @@ export const api = {
   },
   upscale: {
     create: async (data: UpscaleRequest): Promise<void> => {
-      const res = await fetch(`${API_BASE}/upscale`, {
+      const res = await apiFetch(`${API_BASE}/upscale`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

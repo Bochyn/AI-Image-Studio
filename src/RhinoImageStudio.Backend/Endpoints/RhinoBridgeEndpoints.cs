@@ -1,5 +1,6 @@
-using RhinoImageStudio.Backend.Services;
 using System.Text.Json;
+using RhinoImageStudio.Backend.Infrastructure;
+using RhinoImageStudio.Backend.Services;
 using RhinoImageStudio.Shared.Constants;
 using RhinoImageStudio.Shared.Contracts;
 
@@ -125,7 +126,7 @@ public static class RhinoBridgeEndpoints
         }
     }
 
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = ApiJsonOptions.Default;
 }
 
 public sealed record RhinoBridgeStatusResponse(bool Connected, DateTimeOffset? LastSeenUtc);

@@ -1,5 +1,5 @@
+using RhinoImageStudio.Backend.Infrastructure;
 using RhinoImageStudio.Backend.Services;
-using RhinoImageStudio.Shared.Constants;
 using RhinoImageStudio.Shared.Contracts;
 
 namespace RhinoImageStudio.Backend.Endpoints;
@@ -8,65 +8,52 @@ public static class ConfigEndpoints
 {
     public static RouteGroupBuilder MapConfigEndpoints(this RouteGroupBuilder api, int port)
     {
-        api.MapGet("/config", async (ISecretStorage secrets, IStorageService storage, CancellationToken ct) =>
-        {
-            var hasFalApiKey = await secrets.HasSecretAsync(SecretKeyNames.FalApiKey);
-            var hasGeminiApiKey = await secrets.HasSecretAsync(SecretKeyNames.GeminiApiKey);
-            return Results.Ok(new ConfigDto(hasFalApiKey, hasGeminiApiKey, storage.BasePath, port, "gemini"));
-        });
+        api.MapGet("/config", async (IConfigService config, CancellationToken ct) =>
+            Results.Ok(await config.GetConfigAsync(port, ct)));
 
-        api.MapPost("/config/api-key", async (SetApiKeyRequest request, ISecretStorage secrets, CancellationToken ct) =>
+        api.MapPost("/config/gemini-api-key", async (SetGeminiApiKeyRequest request, IConfigService config, CancellationToken ct) =>
         {
-            await secrets.SetSecretAsync(SecretKeyNames.FalApiKey, request.ApiKey);
-            return Results.Ok(new { success = true });
-        });
-
-        api.MapPost("/config/gemini-api-key", async (SetGeminiApiKeyRequest request, ISecretStorage secrets, CancellationToken ct) =>
-        {
-            await secrets.SetSecretAsync(SecretKeyNames.GeminiApiKey, request.ApiKey);
-            return Results.Ok(new { success = true });
-        });
-
-        api.MapPost("/config/fal-api-key", async (SetFalApiKeyRequest request, ISecretStorage secrets, CancellationToken ct) =>
-        {
-            await secrets.SetSecretAsync(SecretKeyNames.FalApiKey, request.ApiKey);
-            return Results.Ok(new { success = true });
-        });
-
-        api.MapPost("/config/verify-gemini-key", async (ISecretStorage secrets, IHttpClientFactory httpClientFactory, CancellationToken ct) =>
-        {
-            var apiKey = await secrets.GetSecretAsync(SecretKeyNames.GeminiApiKey);
-            if (string.IsNullOrEmpty(apiKey))
-                return Results.Ok(new { valid = false, error = "No Gemini API key configured" });
-
             try
             {
-                using var httpClient = httpClientFactory.CreateClient();
-                httpClient.Timeout = TimeSpan.FromSeconds(5);
-                var response = await httpClient.GetAsync(
-                    $"https://generativelanguage.googleapis.com/v1beta/models?key={apiKey}", ct);
-
-                if (response.IsSuccessStatusCode)
-                    return Results.Ok(new { valid = true, error = (string?)null });
-
-                var body = await response.Content.ReadAsStringAsync(ct);
-                return Results.Ok(new { valid = false, error = $"API returned {response.StatusCode}: {body}" });
+                await config.SetGeminiApiKeyAsync(request.ApiKey, ct);
+                return Results.Ok(new { success = true });
             }
-            catch (TaskCanceledException)
+            catch (ArgumentException ex)
             {
-                return Results.Ok(new { valid = false, error = "Connection timed out (5s)" });
+                return Results.BadRequest(ex.Message);
             }
-            catch (HttpRequestException ex)
-            {
-                return Results.Ok(new { valid = false, error = $"Connection failed: {ex.Message}" });
-            }
-        });
+        }).RequireLocalApiToken();
 
-        api.MapDelete("/config/secrets/gemini", async (ISecretStorage secrets) =>
+        api.MapPost("/config/fal-api-key", async (SetFalApiKeyRequest request, IConfigService config, CancellationToken ct) =>
         {
-            await secrets.DeleteSecretAsync(SecretKeyNames.GeminiApiKey);
+            try
+            {
+                await config.SetFalApiKeyAsync(request.ApiKey, ct);
+                return Results.Ok(new { success = true });
+            }
+            catch (ArgumentException ex)
+            {
+                return Results.BadRequest(ex.Message);
+            }
+        }).RequireLocalApiToken();
+
+        api.MapPost("/config/verify-gemini-key", async (IConfigService config, CancellationToken ct) =>
+        {
+            var result = await config.VerifyGeminiKeyAsync(ct);
+            return Results.Ok(new { valid = result.Valid, error = result.Error });
+        }).RequireLocalApiToken();
+
+        api.MapDelete("/config/secrets/gemini", async (IConfigService config, CancellationToken ct) =>
+        {
+            await config.DeleteGeminiApiKeyAsync(ct);
             return Results.NoContent();
-        });
+        }).RequireLocalApiToken();
+
+        api.MapDelete("/config/secrets/fal", async (IConfigService config, CancellationToken ct) =>
+        {
+            await config.DeleteFalApiKeyAsync(ct);
+            return Results.NoContent();
+        }).RequireLocalApiToken();
 
         return api;
     }

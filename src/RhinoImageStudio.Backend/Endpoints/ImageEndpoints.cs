@@ -11,15 +11,20 @@ public static class ImageEndpoints
             try
             {
                 var data = await storage.ReadFileAsync(path, ct);
-                var contentType = path.EndsWith(".png") ? "image/png"
-                    : path.EndsWith(".jpg") || path.EndsWith(".jpeg") ? "image/jpeg"
-                    : path.EndsWith(".webp") ? "image/webp"
+                var contentType = path.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png"
+                    : path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                      path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ? "image/jpeg"
+                    : path.EndsWith(".webp", StringComparison.OrdinalIgnoreCase) ? "image/webp"
                     : "application/octet-stream";
                 return Results.File(data, contentType);
             }
             catch (FileNotFoundException)
             {
                 return Results.NotFound();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Results.Forbid();
             }
         });
 

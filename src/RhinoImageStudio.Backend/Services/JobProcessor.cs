@@ -62,10 +62,23 @@ public sealed class JobProcessor : BackgroundService
         _logger.LogInformation("Job Processor stopped");
     }
 
-    private async Task ProcessJobAsync(Job job, CancellationToken cancellationToken)
+    private async Task ProcessJobAsync(Job queuedJob, CancellationToken cancellationToken)
     {
         using var scope = _scopeFactory.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var job = await dbContext.Jobs.FindAsync(new object[] { queuedJob.Id }, cancellationToken);
+        if (job is null)
+        {
+            _logger.LogWarning("Job {JobId} no longer exists; skipping", queuedJob.Id);
+            return;
+        }
+
+        if (job.Status == JobStatus.Canceled)
+        {
+            _logger.LogInformation("Skipping canceled job {JobId}", job.Id);
+            return;
+        }
 
         _logger.LogInformation("Processing job {JobId} of type {JobType}", job.Id, job.Type);
 

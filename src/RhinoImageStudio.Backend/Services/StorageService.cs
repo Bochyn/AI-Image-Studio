@@ -147,17 +147,22 @@ public class StorageService : IStorageService
 
     public string GetAbsolutePath(string relativePath)
     {
-        // Normalize path separators for Windows compatibility (URL uses /, Windows uses \)
+        var root = GetStorageRootWithSeparator();
         var normalizedPath = relativePath.Replace('/', Path.DirectorySeparatorChar);
-        var absolutePath = Path.GetFullPath(Path.Combine(BasePath, normalizedPath));
+        var absolutePath = Path.GetFullPath(Path.Combine(root, normalizedPath));
 
-        // Prevent path traversal attacks
-        if (!absolutePath.StartsWith(BasePath, StringComparison.OrdinalIgnoreCase))
-        {
+        if (!absolutePath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
             throw new UnauthorizedAccessException("Access denied: path escapes storage root");
-        }
 
         return absolutePath;
+    }
+
+    private string GetStorageRootWithSeparator()
+    {
+        var root = Path.GetFullPath(BasePath);
+        if (!root.EndsWith(Path.DirectorySeparatorChar))
+            root += Path.DirectorySeparatorChar;
+        return root;
     }
 
     public string GetRelativePath(string absolutePath)

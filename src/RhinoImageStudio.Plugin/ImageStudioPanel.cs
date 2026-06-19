@@ -10,6 +10,7 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using Rhino;
 using Rhino.UI;
+using RhinoImageStudio.Shared.Utilities;
 
 namespace RhinoImageStudio.Plugin;
 
@@ -89,6 +90,14 @@ public class ImageStudioPanel : Eto.Forms.Panel, IPanel
 
             // Handle messages from JavaScript
             _webView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
+
+            var localToken = BridgeTokenReader.ReadToken();
+            if (!string.IsNullOrEmpty(localToken))
+            {
+                var escapedToken = localToken.Replace("\\", "\\\\").Replace("'", "\\'");
+                await _webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
+                    $"window.__RHINO_LOCAL_TOKEN='{escapedToken}';");
+            }
 
             // Navigate to the UI
             var uiUrl = $"{backend.BaseUrl}/index.html";

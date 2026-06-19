@@ -170,8 +170,6 @@ public record ConfigDto(
     string DefaultProvider = "gemini"  // "gemini" or "fal"
 );
 
-public record SetApiKeyRequest(string ApiKey);
-
 public record SetGeminiApiKeyRequest(string ApiKey);
 
 public record SetFalApiKeyRequest(string ApiKey);

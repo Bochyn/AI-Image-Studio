@@ -11,6 +11,7 @@ public static class DatabaseInitializer
 
         await EnsureGenerationArchiveColumnsAsync(db);
         await EnsureJobProviderModelColumnAsync(db);
+        await EnsureJobResultIdIndexAsync(db);
     }
 
     private static async Task EnsureGenerationArchiveColumnsAsync(AppDbContext db)
@@ -47,5 +48,11 @@ public static class DatabaseInitializer
 
         if (!existingColumns.Contains("ProviderModelId"))
             await db.Database.ExecuteSqlRawAsync("ALTER TABLE Jobs ADD COLUMN ProviderModelId TEXT");
+    }
+
+    private static async Task EnsureJobResultIdIndexAsync(AppDbContext db)
+    {
+        await db.Database.ExecuteSqlRawAsync(
+            "CREATE INDEX IF NOT EXISTS IX_Jobs_ResultId ON Jobs(ResultId)");
     }
 }

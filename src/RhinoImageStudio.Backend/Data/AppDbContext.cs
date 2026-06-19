@@ -109,9 +109,15 @@ public class AppDbContext : DbContext
             entity.Property(e => e.FalRequestId).HasMaxLength(100);
             entity.Property(e => e.ProviderModelId).HasMaxLength(100);
 
+            entity.HasOne<Project>()
+                .WithMany()
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasIndex(e => e.ProjectId);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.ResultId);
         });
     }
 }
