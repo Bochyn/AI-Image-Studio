@@ -1,0 +1,132 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio
+.vs/
+*.user
+*.userosscache
+*.suo
+*.cache
+*.rsuser
+*.userprefs
+*.ncb
+*.sdf
+*.opensdf
+*.opendb
+*.pdb
+*.ilk
+*.idb
+*.obj
+*.log
+*.tlog
+
+# Rider
+.idea/
+*.sln.iml
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+**/Properties/launchSettings.json
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+nuget.exe
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+paket-files/
+.paket/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Vite
+dist/
+dist-ssr/
+*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# IDE
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Rhino Plugin
+*.rhp.locked
+
+# Logs
+logs/
+*.log
+
+# Local data
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Test Results
+TestResults/
+*.trx
+nul
+_journal/
+appsettings.json
+appsettings.Development.json
+changelog/
+
+# Agent planning scratch (not canonical docs)
+docs/plans/
+SPEC.md
+AGENTS.md
+
+# Claude Code
+.claude/
+
+# Local agent workspaces and machine-specific Codex/Superpowers state
+.agents/
+.codex/
+.superpowers/
+.worktrees/
+skills/
+skills-lock.json
+
+# Brand assets
+.brandbook/

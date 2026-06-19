@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>RhinoImageStudio.Plugin</RootNamespace>
+    <AssemblyName>RhinoImageStudio</AssemblyName>
+    <Description>Rhino Image Studio - AI-powered viewport visualization plugin for Rhinoceros</Description>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+
+    <!-- Disable auto-generated assembly attributes to allow manual Guid -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+
+    <!-- Suppress compatibility warnings -->
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+
+    <!-- Rhino Plugin output -->
+    <OutputType>Library</OutputType>
+    <TargetExt>.rhp</TargetExt>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- RhinoCommon - Rhino 8 -->
+    <PackageReference Include="RhinoCommon" Version="8.0.23304.9001">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+
+    <!-- Eto.Forms (comes with Rhino, reference for compilation) -->
+    <PackageReference Include="Eto.Forms" Version="2.8.3">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+
+    <!-- Eto.Wpf platform for WebView2 hosting -->
+    <PackageReference Include="Eto.Platform.Wpf" Version="2.8.3">
+      <PrivateAssets>all</PrivateAssets>
+      <ExcludeAssets>runtime</ExcludeAssets>
+    </PackageReference>
+
+    <!-- WebView2 for modern web hosting -->
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2045.28" />
+
+    <!-- HttpClient for .NET Framework -->
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+  </ItemGroup>
+
+  <!-- Framework assembly references for net48 -->
+  <ItemGroup>
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RhinoImageStudio.Shared\RhinoImageStudio.Shared.csproj" />
+    <ProjectReference Include="..\RhinoImageStudio.Plugin.RhinoCommon\RhinoImageStudio.Plugin.RhinoCommon.csproj" />
+  </ItemGroup>
+
+  <!-- Copy Backend executable to plugin output -->
+  <Target Name="CopyBackendToOutput" AfterTargets="Build">
+    <ItemGroup>
+      <BackendFiles Include="..\RhinoImageStudio.Backend\bin\$(Configuration)\net8.0\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(BackendFiles)" DestinationFolder="$(OutputPath)Backend\%(RecursiveDir)" SkipUnchangedFiles="true" Condition="Exists('..\RhinoImageStudio.Backend\bin\$(Configuration)\net8.0')" />
+  </Target>
+
+</Project>

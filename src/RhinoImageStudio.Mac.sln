@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RhinoImageStudio.Shared", "RhinoImageStudio.Shared\RhinoImageStudio.Shared.csproj", "{C22808CA-796E-4AB9-A57A-92D0BC4CDE88}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RhinoImageStudio.Backend", "RhinoImageStudio.Backend\RhinoImageStudio.Backend.csproj", "{BE770F02-17C0-43D1-BB47-CE0B07397611}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RhinoImageStudio.Plugin.Mac", "RhinoImageStudio.Plugin.Mac\RhinoImageStudio.Plugin.Mac.csproj", "{627939F2-C2DC-4311-9C45-384548110611}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RhinoImageStudio.Plugin.RhinoCommon", "RhinoImageStudio.Plugin.RhinoCommon\RhinoImageStudio.Plugin.RhinoCommon.csproj", "{3AB9F277-7569-4397-8B81-AEE3DA959627}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RhinoImageStudio.Backend.Tests", "RhinoImageStudio.Backend.Tests\RhinoImageStudio.Backend.Tests.csproj", "{C4E18CC8-D658-4840-B551-420E240409B5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C22808CA-796E-4AB9-A57A-92D0BC4CDE88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C22808CA-796E-4AB9-A57A-92D0BC4CDE88}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C22808CA-796E-4AB9-A57A-92D0BC4CDE88}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C22808CA-796E-4AB9-A57A-92D0BC4CDE88}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE770F02-17C0-43D1-BB47-CE0B07397611}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE770F02-17C0-43D1-BB47-CE0B07397611}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE770F02-17C0-43D1-BB47-CE0B07397611}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE770F02-17C0-43D1-BB47-CE0B07397611}.Release|Any CPU.Build.0 = Release|Any CPU
+		{627939F2-C2DC-4311-9C45-384548110611}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{627939F2-C2DC-4311-9C45-384548110611}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{627939F2-C2DC-4311-9C45-384548110611}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{627939F2-C2DC-4311-9C45-384548110611}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3AB9F277-7569-4397-8B81-AEE3DA959627}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3AB9F277-7569-4397-8B81-AEE3DA959627}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3AB9F277-7569-4397-8B81-AEE3DA959627}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3AB9F277-7569-4397-8B81-AEE3DA959627}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C4E18CC8-D658-4840-B551-420E240409B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4E18CC8-D658-4840-B551-420E240409B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4E18CC8-D658-4840-B551-420E240409B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4E18CC8-D658-4840-B551-420E240409B5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

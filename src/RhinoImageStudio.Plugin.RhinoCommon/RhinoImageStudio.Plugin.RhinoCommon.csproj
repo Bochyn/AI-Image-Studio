@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net48;net8.0</TargetFrameworks>
+    <RootNamespace>RhinoImageStudio.Plugin.RhinoCommon</RootNamespace>
+    <AssemblyName>RhinoImageStudio.Plugin.RhinoCommon</AssemblyName>
+    <Description>Shared RhinoCommon utilities for Windows and macOS plugins</Description>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn);NU1701;CA1416</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RhinoCommon" Version="8.0.23304.9001" ExcludeAssets="runtime" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RhinoImageStudio.Shared\RhinoImageStudio.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

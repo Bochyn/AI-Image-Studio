@@ -1,0 +1,128 @@
+/* Geist Mono Font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Core palette - Mono Theme Light */
+  --text: #0F0F0F;
+  --background: #ededed;
+  --primary: #586B71;
+  --secondary: #757575;
+  --accent: #0F0F0F;
+
+  /* UI hierarchy */
+  --panel-bg: #ededed;
+  --card-bg: #ededed;
+  --card-hover: #E5E5E5;
+  --border: #D6D6D6;
+
+  /* Extended palette */
+  --danger: #757575;
+  --success: #757575;
+  --warning: #757575;
+  --info: #586B71;
+
+  /* Utilities */
+  --radius: 0rem;
+  --font-sans: 'Geist Mono', ui-monospace, monospace;
+}
+
+.dark {
+  /* Core palette - Mono Theme Dark */
+  --text: #D1D1D1;
+  --background: #262626;
+  --primary: #90A3A9;
+  --secondary: #999999;
+  --accent: #D1D1D1;
+
+  /* UI hierarchy */
+  --panel-bg: #2C2C2C;
+  --card-bg: #2C2C2C;
+  --card-hover: #363636;
+  --border: #353535;
+
+  /* Extended palette */
+  --danger: #999999;
+  --success: #999999;
+  --warning: #999999;
+  --info: #90A3A9;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+    border-radius: 0 !important;
+  }
+  body {
+    background-color: var(--background);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-weight: 400;
+    @apply antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sans);
+    font-weight: 600;
+  }
+}
+
+.masonry-grid {
+  columns: 4 240px;
+  column-gap: 1rem;
+}
+
+.masonry-item {
+  break-inside: avoid;
+  margin-bottom: 1rem;
+}
+
+/* Hidden scrollbar — scrollable but invisible */
+::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 9999px;
+}
+*:hover::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+}
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+*:hover {
+  scrollbar-color: var(--border) transparent;
+}
+
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-pop-in {
+  from {
+    opacity: 0;
+    scale: 0.98;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+.modal-backdrop {
+  animation: modal-fade-in 180ms ease-out;
+}
+
+.modal-panel {
+  animation: modal-pop-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}

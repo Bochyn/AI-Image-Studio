@@ -1,0 +1,10 @@
+packages:
+  - .
+
+allowBuilds:
+  esbuild: true
+
+overrides:
+  picomatch: 4.0.4
+  postcss: 8.5.14
+  rollup: 4.59.0

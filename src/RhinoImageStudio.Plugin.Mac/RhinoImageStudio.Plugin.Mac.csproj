@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <TargetExt>.rhp</TargetExt>
+    <AssemblyName>RhinoImageStudio</AssemblyName>
+    <RootNamespace>RhinoImageStudio.Plugin.Mac</RootNamespace>
+    <Description>Rhino Image Studio plugin shell for Rhinoceros on macOS</Description>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RhinoCommon" Version="8.0.23304.9001" ExcludeAssets="runtime" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RhinoImageStudio.Shared\RhinoImageStudio.Shared.csproj" />
+    <ProjectReference Include="..\RhinoImageStudio.Plugin.RhinoCommon\RhinoImageStudio.Plugin.RhinoCommon.csproj" />
+  </ItemGroup>
+
+</Project>

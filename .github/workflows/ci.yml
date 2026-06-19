@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Frontend UI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.0.6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+          cache-dependency-path: src/RhinoImageStudio.UI/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm --dir src/RhinoImageStudio.UI install --frozen-lockfile
+
+      - name: Lint UI
+        run: pnpm --dir src/RhinoImageStudio.UI run lint
+
+      - name: Build UI
+        run: pnpm --dir src/RhinoImageStudio.UI run build
+
+      - name: Verify committed wwwroot is current
+        shell: bash
+        run: |
+          git diff --exit-code -- src/RhinoImageStudio.Backend/wwwroot
+          test -z "$(git status --porcelain -- src/RhinoImageStudio.Backend/wwwroot)"
+
+  windows-plugin:
+    name: Windows plug-in
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore src/RhinoImageStudio.sln
+
+      - name: Build
+        run: dotnet build src/RhinoImageStudio.sln --configuration Release --no-restore
+
+      - name: Test backend
+        run: dotnet test src/RhinoImageStudio.Backend.Tests/RhinoImageStudio.Backend.Tests.csproj --configuration Release --no-build
+
+  macos-plugin:
+    name: macOS plug-in
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore src/RhinoImageStudio.Mac.sln
+
+      - name: Build
+        run: dotnet build src/RhinoImageStudio.Mac.sln --configuration Release --no-restore
+
+      - name: Test backend
+        run: dotnet test src/RhinoImageStudio.Backend.Tests/RhinoImageStudio.Backend.Tests.csproj --configuration Release
+
+      - name: Publish macOS backend sidecar
+        run: >
+          dotnet publish src/RhinoImageStudio.Backend/RhinoImageStudio.Backend.csproj
+          --configuration Release
+          --framework net8.0
+          --runtime osx-arm64
+          --self-contained true
+          --output build/Release/mac-backend-osx-arm64
+
+      - name: Verify macOS artifacts
+        shell: bash
+        run: |
+          test -f build/Release/net8.0/RhinoImageStudio.rhp
+          test -x build/Release/mac-backend-osx-arm64/RhinoImageStudio.Backend
