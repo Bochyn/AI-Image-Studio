@@ -1,6 +1,6 @@
 # Engineering Documentation
 
-Technical documentation for developers, architects, and reviewers evaluating **Rhino Image Studio** as a portfolio or hiring artifact.
+Technical documentation for developers, architects, and reviewers evaluating **AI Image Studio** as a portfolio or hiring artifact.
 
 > Polish: [Inżynieria (PL)](../pl/inzynieria/README.md)
 

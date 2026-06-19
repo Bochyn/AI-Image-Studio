@@ -4,7 +4,7 @@ Dowiedz się, jak przekształcić widok z Rhino w wizualizację AI w kilku prost
 
 ## Przegląd Interfejsu
 
-Panel Rhino Image Studio składa się z głównych sekcji:
+Panel AI Image Studio składa się z głównych sekcji:
 1.  **Canvas (Podgląd)**: Główny obszar wyświetlający przechwycony widok lub wygenerowany obraz.
 2.  **Controls (Panel sterowania)**: Po prawej stronie (lub na dole), gdzie wpisujesz prompty i ustawiasz parametry.
 3.  **History (Historia)**: Pasek z miniaturami poprzednich generacji.
@@ -14,7 +14,7 @@ Panel Rhino Image Studio składa się z głównych sekcji:
 
 ## Strona Główna
 
-Po uruchomieniu Rhino Image Studio zobaczysz stronę główną z dwoma zakładkami: **My Projects** i **Generations**.
+Po uruchomieniu AI Image Studio zobaczysz stronę główną z dwoma zakładkami: **My Projects** i **Generations**.
 
 ### Zakładka "My Projects"
 
@@ -37,7 +37,7 @@ Operacje na stronie głównej (pin, rename, delete, błędy ładowania) sygnaliz
 
 ## Konfiguracja (Settings)
 
-Aby korzystać z Rhino Image Studio, musisz skonfigurować klucze API dla używanych modeli AI.
+Aby korzystać z AI Image Studio, musisz skonfigurować klucze API dla używanych modeli AI.
 
 ### Jak otworzyć ustawienia
 
@@ -48,10 +48,9 @@ Kliknij ikonę **koła zębatego** (gear) w prawym górnym rogu paska nawigacji.
 Na stronie Settings znajdują się pola do wprowadzenia kluczy API:
 
 - **Gemini API Key** — wymagany do modeli Gemini 3.1 Flash i Gemini 3 Pro. Wpisz klucz, kliknij **Save**, a następnie **Verify** aby sprawdzić poprawność.
-- **fal.ai API Key** — wymagany do modeli Seedream, Qwen Multi-Angle i Topaz Upscale. Wpisz klucz i zapisz.
-- **OpenAI API Key** — wymagany do modelu GPT-Image 1.5 (obsługiwanego przez fal.ai). Wpisz klucz i zapisz.
+- **fal.ai API Key** — wymagany do modeli Seedream, GPT Image 1.5/2, Qwen Multi-Angle i Topaz Upscale. Wpisz klucz i zapisz.
 
-Każdy klucz jest przechowywany lokalnie na maszynie za pomocą Windows DPAPI — nigdy nie jest wysyłany do zewnętrznych serwisów poza docelowym API.
+Klucze są przechowywane lokalnie w encrypted storage aplikacji — nigdy nie są commitowane do repozytorium ani wysyłane poza docelowe API providera.
 
 ### Ścieżka danych
 
@@ -145,7 +144,7 @@ Kliknij ponownie ikonę kolumn w pasku narzędzi.
 Inpainting pozwala edytować **konkretne obszary** obrazu za pomocą masek. Każda maska ma własną instrukcję — Gemini edytuje tylko zamaskowane regiony, reszta pozostaje nienaruszona.
 
 ### Wymagania
-- Model Gemini (3.1 Flash lub 3 Pro) — modele fal.ai (Seedream, GPT-Image) nie obsługują masek
+- Model Gemini (3.1 Flash lub 3 Pro) — modele image-edit fal.ai (Seedream, GPT Image 1.5/2) nie obsługują masek
 - Capture lub generacja jako źródło
 
 ### Limity masek
@@ -154,7 +153,7 @@ Inpainting pozwala edytować **konkretne obszary** obrazu za pomocą masek. Każ
 |-------|-----------|-------------------|---------|
 | Gemini 3.1 Flash | 2 | 16 | source(1) + overlay(1) + refs ≤ 16 → max 14 referencji z maskami |
 | Gemini 3 Pro | 8 | 14 | source(1) + overlay(1) + refs ≤ 14 → max 11 referencji z maskami |
-| fal.ai (Seedream, GPT-Image) | 0 | - | Maski nieobsługiwane |
+| fal.ai (Seedream, GPT Image 1.5/2) | 0 | - | Maski nieobsługiwane |
 
 Wszystkie maski są kompozytowane w jeden obraz overlay (oryginał z kolorowymi maskami) — nie zajmują osobnych slotów. Budżet obrazów to: `2 (source + overlay) + referencje ≤ maxTotalImages`.
 
@@ -233,6 +232,7 @@ Maksymalna liczba obrazów referencyjnych zależy od wybranego modelu (źródło
 | Gemini 3 Pro | 11 |
 | Seedream v5 Lite | 9 |
 | GPT-Image 1.5 | 4 |
+| GPT Image 2 | 4 |
 
 > **Uwaga:** Przy użyciu masek inpaintingowych budżet obrazów to `source(1) + overlay(1) + referencje ≤ maxTotalImages`, więc efektywna liczba referencji może być mniejsza.
 
@@ -244,7 +244,7 @@ Obrazy referencyjne są zapisywane **per projekt** i **persystują między sesja
 
 ## Dostępne Modele AI
 
-Rhino Image Studio obsługuje kilka modeli AI do generowania i edycji obrazów. Wybór modelu odbywa się w panelu **Inspector** (ModelSelector) w widoku Studio.
+AI Image Studio obsługuje kilka modeli AI do generowania i edycji obrazów. Wybór modelu odbywa się w panelu **Inspector** (ModelSelector) w widoku Studio.
 
 | Model | Dostawca | Opis | Maski | Referencje |
 |-------|----------|------|-------|------------|
@@ -252,12 +252,13 @@ Rhino Image Studio obsługuje kilka modeli AI do generowania i edycji obrazów. 
 | **Gemini 3 Pro (Preview)** | Google | Wysoka jakość, obsługa 2K/4K | Tak (max 8) | Tak (max 11) |
 | **Seedream v5 Lite** | ByteDance (fal.ai) | Edycja obrazów wysokiej jakości (do 3K) | Nie | Tak (max 9) |
 | **GPT-Image 1.5** | OpenAI (fal.ai) | Edycja z kontrolą jakości i wierności | Nie | Tak (max 4) |
+| **GPT Image 2** | OpenAI route (fal.ai) | Edycja z quality control i presetami image size | Nie | Tak (max 4) |
 
-### GPT-Image 1.5 — dodatkowe opcje
+### GPT Image — dodatkowe opcje
 
-Model GPT-Image 1.5 udostępnia dwa dodatkowe parametry w panelu Inspector:
+Modele GPT Image udostępniają dodatkowe parametry w panelu Inspector:
 - **Quality** (Low / Medium / High) — kontrola jakości generowanego obrazu
-- **Fidelity** (Low / High) — stopień wierności względem źródła
+- **Fidelity** (Low / High) — stopień wierności względem źródła w GPT-Image 1.5
 
 ### Panel Inspector
 

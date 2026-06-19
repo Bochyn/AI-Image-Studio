@@ -1,6 +1,6 @@
 # Przegląd projektu
 
-**Rhino Image Studio** to wtyczka do **Rhinoceros 8** (Windows + macOS), która wpin generatywną AI w workflow architekta. Użytkownik robi capture viewportu 3D, maluje maski inpaintingu, dodaje reference images i dostaje fotorealistyczne rendery — bez wychodzenia z Rhino.
+**AI Image Studio** to wtyczka do **Rhinoceros 8** (Windows + macOS), która wpina AI-assisted image generation w workflow architekta. Użytkownik robi capture viewportu 3D, maluje maski inpaintingu, dodaje reference images i dostaje wizualizacje, warianty oraz precyzyjne edycje — bez wychodzenia z Rhino.
 
 Ten dokument jest dla **recenzentów technicznych**: rekruterów z backgroundem inżynierskim, staff engineerów, architektów.
 
@@ -77,7 +77,7 @@ Szczegóły: [Jakość kodu](jakosc-kodu.md)
 | Instalacja | [Pierwsze kroki](../pierwsze-kroki.md) |
 | Pełne API | [Architektura](../api/architektura.md) |
 | Audyt | [Jakość kodu](jakosc-kodu.md) |
-| Kontrybucja | [CONTRIBUTING (EN)](../CONTRIBUTING.md) |
+| Kontrybucja | [CONTRIBUTING (EN)](../../CONTRIBUTING.md) |
 
 ## Status
 

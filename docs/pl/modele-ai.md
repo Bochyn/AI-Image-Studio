@@ -1,6 +1,6 @@
 # Wspierane Modele AI
 
-Rhino Image Studio wykorzystuje różne modele AI do generowania i przetwarzania obrazów. Każdy model ma swoje specyficzne zastosowanie i parametry.
+AI Image Studio wykorzystuje różne modele AI do generowania i przetwarzania obrazów. Każdy model ma swoje specyficzne zastosowanie i parametry.
 
 ## Przegląd Modeli
 
@@ -10,6 +10,7 @@ Rhino Image Studio wykorzystuje różne modele AI do generowania i przetwarzania
 | Gemini 3 Pro | Google | Generowanie / Edycja / Inpainting | Aspect Ratio, Resolution | Max 11 | Max 8 |
 | Seedream v5 Lite | fal.ai (ByteDance) | Edycja obrazów | Image Size presets | Max 9 | - |
 | GPT-Image 1.5 | fal.ai (OpenAI) | Edycja obrazów | Quality, Fidelity | Max 4 | - |
+| GPT Image 2 | fal.ai (OpenAI route) | Edycja obrazów | Quality, Image Size presets | Max 4 | - |
 | Qwen Multi-Angle | fal.ai | Zmiana kąta kamery | Rotation, Elevation, Zoom | - | - |
 | Topaz Upscale | fal.ai | Powiększanie | Factor, Model type | - | - |
 
@@ -203,6 +204,55 @@ Wrapper fal.ai na OpenAI GPT-Image 1 z kontrolą jakości i fidelity.
 
 ---
 
+## GPT Image 2 (Edit)
+
+**ID:** `openai/gpt-image-2/edit`
+**Provider:** fal.ai (OpenAI route)
+**Tryby:** Generate, Refine (Edit)
+
+Nowszy route edycji obrazów OpenAI udostępniany przez fal.ai. W AI Image Studio używa klucza fal.ai; aplikacja nie ma osobnego pola na klucz OpenAI.
+
+### Image Size
+
+| Wartość API | Proporcje |
+|-------------|-----------|
+| `auto` | Dopasowanie do źródła |
+| `square_hd` | 1:1 HD |
+| `square` | 1:1 |
+| `portrait_4_3` | 3:4 |
+| `portrait_16_9` | 9:16 |
+| `landscape_4_3` | 4:3 |
+| `landscape_16_9` | 16:9 |
+
+### Quality
+
+| Wartość | Opis |
+|---------|------|
+| `low` | Szybki draft |
+| `medium` | Balans |
+| `high` | Najwyższa jakość |
+
+### Możliwości
+
+- **Quality control** — 3 poziomy jakości
+- **Reference Images** — do 4 obrazów przez `image_urls`
+- Obsługa trybów Generate / Refine
+- Brak obsługi: seed, strength, negative prompt, maski
+
+### Payload API
+
+```json
+{
+  "prompt": "...",
+  "image_urls": ["source_url"],
+  "image_size": "square_hd",
+  "quality": "high",
+  "num_images": 1
+}
+```
+
+---
+
 ## Qwen Multi-Angle
 
 **ID:** `fal-ai/qwen-image-edit-2511-multiple-angles`
@@ -276,7 +326,7 @@ Profesjonalne powiększanie obrazów z wykorzystaniem technologii Topaz Labs. Do
 
 ## Reference Images (Referencje)
 
-Oba modele Gemini (Flash i Pro) obsługują **obrazy referencyjne** — dodatkowe obrazy, które model AI wykorzystuje jako kontekst wizualny podczas generowania.
+Modele Gemini, Seedream i GPT Image obsługują **obrazy referencyjne** — dodatkowe obrazy, które model AI wykorzystuje jako kontekst wizualny podczas generowania. Aktualne limity pochodzą z `src/RhinoImageStudio.UI/src/lib/models.ts`, czyli źródła prawdy dla możliwości modeli w UI.
 
 ### Zastosowania
 - Materiały i tekstury (np. drewno, marmur)
@@ -300,7 +350,7 @@ Oba modele Gemini (Flash i Pro) obsługują **obrazy referencyjne** — dodatkow
 
 ### Techniczne detale
 - Upload: `POST /api/projects/{projectId}/references` (multipart)
-- Referencje wysyłane jako `inline_data` parts[] w Gemini API request
+- Referencje wysyłane jako `inline_data` parts[] w requestach Gemini oraz jako `image_urls` w requestach fal.ai
 - Pliki przechowywane w `%LOCALAPPDATA%/RhinoImageStudio/data/references/`
 
 ---
@@ -329,6 +379,7 @@ Oba modele Gemini obsługują **rysowanie masek** — zaznaczanie konkretnych ob
 | Gemini 3 Pro | 8 | 14 | source(1) + overlay(1) + refs ≤ 14 |
 | Seedream | 0 | - | Maski nieobsługiwane |
 | GPT-Image 1.5 | 0 | - | Maski nieobsługiwane (prompt engineering) |
+| GPT Image 2 | 0 | - | Maski nieobsługiwane |
 | fal.ai (inne) | 0 | - | Maski nieobsługiwane |
 
 W pipeline 2-image overlay, maski zajmują stale **2 sloty** (source + overlay) niezależnie od liczby warstw masek. Referencje dzielą budżet z tym stałym kosztem. Funkcja `getAvailableMaskSlots(modelId, refCount)` zwraca `maxMaskLayers` gdy `2 + refCount ≤ maxTotalImages`, w przeciwnym razie `0`.
@@ -378,7 +429,7 @@ W pipeline 2-image overlay, maski zajmują stale **2 sloty** (source + overlay) 
 - Zapisz w: Settings → Gemini API Key
 
 ### fal.ai
-- Wymagany do trybów: Generate/Refine (Seedream, GPT-Image), Pan (Multi-Angle), Upscale
+- Wymagany do trybów: Generate/Refine (Seedream, GPT Image 1.5/2), Pan (Multi-Angle), Upscale
 - Uzyskaj klucz: [fal.ai Console](https://fal.ai/dashboard)
 - Zapisz w: Settings → fal.ai API Key
 

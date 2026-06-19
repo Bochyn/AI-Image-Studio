@@ -9,7 +9,7 @@
 ## Review / Merge checklist
 
 - [ ] PR title follows Conventional Commits: `<type>(<scope>): <summary>`
-- [ ] [Docs updated](docs/) if applicable.
+- [ ] [Docs updated](../docs/) if applicable.
 - [ ] Tests included (or manual verification steps provided).
 - [ ] Screenshots/Video attached (for UI changes).
 - [ ] No secrets, local config, generated captures or API keys are included.

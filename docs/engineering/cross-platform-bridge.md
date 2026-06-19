@@ -1,6 +1,6 @@
 # Cross-Platform Bridge
 
-Rhino Image Studio must run **inside Rhinoceros 8** on Windows and macOS while serving the **same React UI**. The hardest integration problem is: *how does JavaScript call Rhino APIs when there is no WebView2 on macOS?*
+AI Image Studio must run **inside Rhinoceros 8** on Windows and macOS while serving the **same React UI**. The hardest integration problem is: *how does JavaScript call Rhino APIs when there is no WebView2 on macOS?*
 
 This document explains both bridge implementations and the shared abstractions that keep them aligned.
 
@@ -55,14 +55,14 @@ graph TB
 
 `RhinoBridge` is registered with `CoreWebView2.AddHostObjectToScript("rhino", ...)`.
 
-Critical rule: **all Rhino API calls must run on the Rhino UI thread**. The refactored implementation uses:
+Critical rule: Rhino API work that touches active views/documents must be posted to the Rhino UI thread. The implementation uses:
 
 ```csharp
 // RhinoImageStudio.Plugin.RhinoCommon/RhinoUiThread.cs
 public static Task<T> RunAsync<T>(Func<T> action)
 ```
 
-`RunAsync` posts to `RhinoApp.InvokeOnUiThread` and completes a `TaskCompletionSource` — no `.Result` on the UI thread, no fire-and-forget.
+`RunAsync` posts to `RhinoApp.InvokeOnUiThread` and completes a `TaskCompletionSource`. The WebView2 host-object API remains synchronous at the JavaScript boundary, so bridge methods wait with `.GetAwaiter().GetResult()` after queuing the Rhino work.
 
 Capture flow:
 
@@ -95,7 +95,7 @@ sequenceDiagram
     BE->>BE: Enqueue work item (getDisplayModes)
     Mac->>BE: GET /api/rhino/bridge/next + token
     BE-->>Mac: { requestId, action, payload }
-    Mac->>RH: RhinoDisplayQueries (UI thread)
+    Mac->>RH: RhinoDisplayQueries
     RH-->>Mac: JSON
     Mac->>BE: POST /api/rhino/bridge/{id}/complete
     BE-->>UI: 200 display modes JSON
@@ -166,7 +166,7 @@ Type definitions: `src/lib/webview.d.ts` extends `Window` for `chrome.webview`.
 
 | Type | Purpose |
 |------|---------|
-| `ViewportCaptureService` | `ViewCapture.CaptureToBitmap` → PNG bytes |
+| `ViewportCaptureService` | `RhinoView.CaptureToBitmap` → PNG bytes |
 | `CaptureUploadClient` | Multipart POST to `/api/captures` |
 | `RhinoDisplayQueries` | Display modes / viewports JSON |
 | `RhinoUiThread` | UI-thread marshaling (Windows) |
@@ -180,7 +180,7 @@ Display mode names flow through `DisplayModeMapping` in Shared — one map from 
 |---------|--------------|
 | `503 Rhino bridge is not connected` | macOS plugin not running poll loop — run `ImageStudioStartBackend` |
 | `401` on bridge endpoints | Token mismatch — restart backend + plugin |
-| Empty display modes on Mac | Fixed in refactor — ensure PR #22+ (real RPC, not stubs) |
+| Empty display modes on Mac | macOS plug-in is not polling the bridge queue or Rhino cannot return display data |
 | Capture hangs | Queue full (10) or Rhino modal dialog blocking UI thread |
 
 ## Smoke test (macOS)
@@ -194,6 +194,13 @@ ImageStudioOpen
 ```
 
 Verify: display mode dropdown populates, capture returns image in studio.
+
+## Official RhinoCommon references
+
+- [RhinoCommon API](https://developer.rhino3d.com/api/rhinocommon/) — namespace reference for commands, display, plug-ins and UI.
+- [Rhino.Display.RhinoView](https://developer.rhino3d.com/api/rhinocommon/rhino.display.rhinoview) — `CaptureToBitmap` overloads used by `ViewportCaptureService`.
+- [RhinoApp.InvokeOnUiThread](https://developer.rhino3d.com/api/rhinocommon/rhino.rhinoapp/invokeonuithread) — UI-thread dispatch used by `RhinoUiThread`.
+- [Rhino.PlugIns.PlugIn](https://developer.rhino3d.com/api/rhinocommon/rhino.plugins.plugin) — plug-in lifecycle and command association.
 
 ## Further reading
 

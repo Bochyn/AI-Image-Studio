@@ -1,6 +1,6 @@
 # Project Overview
 
-**Rhino Image Studio** is a cross-platform **Rhinoceros 8** plugin that embeds generative AI in an architectural design workflow. Users capture a 3D viewport, paint inpainting masks, attach reference images, and receive photorealistic renders — without leaving Rhino.
+**AI Image Studio** is a cross-platform **Rhinoceros 8** plugin that embeds AI-assisted image generation in an architectural design workflow. Users capture a 3D viewport, paint inpainting masks, attach reference images, and receive visualization drafts, variants and targeted edits without leaving Rhino.
 
 This document is written for **technical reviewers** (recruiters with engineering background, staff engineers, architects). It explains what was built, why the architecture looks the way it does, and which engineering decisions are worth discussing in an interview.
 
@@ -93,7 +93,7 @@ Gemini image models used here do not accept a separate mask channel. The pipelin
 
 ### 5. Code quality program
 
-The codebase went through a structured **audit and refactor** (Thermos review + phased remediation):
+The codebase went through a structured **audit and refactor** before public release:
 
 - Extracted god files (`Program.cs`, duplicate capture services)
 - Fixed SSE pub/sub (per-subscriber channels)

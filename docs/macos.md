@@ -1,6 +1,6 @@
 # macOS Plugin Setup
 
-This guide covers the native macOS build of Rhino Image Studio for Rhino 8.
+This guide covers the native macOS build of AI Image Studio for Rhino 8.
 
 ## Status
 
@@ -24,7 +24,7 @@ AI generation still requires valid provider API keys configured in the app.
 
 - macOS with Rhino 8 installed at `/Applications/Rhino 8.app`
 - .NET 8 SDK
-- Node.js 18+
+- Node.js 22.x
 - pnpm
 - jq for command-line smoke tests
 
@@ -40,21 +40,20 @@ PATH=/opt/homebrew/opt/dotnet@8/libexec:$PATH
 From the repository root:
 
 ```bash
-cd /Users/mateuszbochynski/Developer/Rhino-Image-Studio
-git switch feature/rhino-macos-plugin
+cd AI-Image-Studio
 ```
 
 Build the React UI into the backend `wwwroot` folder:
 
 ```bash
-cd /Users/mateuszbochynski/Developer/Rhino-Image-Studio/src/RhinoImageStudio.UI
+cd src/RhinoImageStudio.UI
 pnpm run build
 ```
 
 Build and install the macOS plug-in:
 
 ```bash
-cd /Users/mateuszbochynski/Developer/Rhino-Image-Studio
+cd ../..
 
 DOTNET_BIN=/opt/homebrew/opt/dotnet@8/libexec/dotnet \
 DOTNET_ROOT=/opt/homebrew/opt/dotnet@8/libexec \
@@ -192,7 +191,7 @@ Expected files:
 | Command | Purpose |
 |---------|---------|
 | `ImageStudioMacStatus` | Confirms that the macOS plug-in loaded and writes a status marker. |
-| `ImageStudioStartBackend` | Starts or connects to the Rhino Image Studio backend sidecar. |
+| `ImageStudioStartBackend` | Starts or connects to the AI Image Studio backend sidecar. |
 | `ImageStudioOpen` | Starts the backend if needed and opens the UI in the default browser. |
 
 ## Architecture Notes
@@ -204,7 +203,7 @@ The macOS build uses a backend-mediated bridge instead:
 1. React calls HTTP endpoints under `/api/rhino/*`.
 2. The backend queues Rhino work items in `RhinoBridgeService`.
 3. `MacRhinoBridgeClient` long-polls `/api/rhino/bridge/next` from inside Rhino.
-4. The plug-in executes RhinoCommon operations on the Rhino UI thread.
+4. The plug-in executes viewport capture on the Rhino UI thread; display/query RPCs currently call the shared RhinoCommon query helpers directly.
 5. The plug-in uploads captures through the existing `/api/captures` endpoint.
 
 This keeps the React app mostly shared between Windows and macOS while replacing the platform-specific bridge layer.
@@ -214,4 +213,4 @@ This keeps the React app mostly shared between Windows and macOS while replacing
 - macOS currently opens the UI in the system browser, not a docked Rhino panel.
 - The bridge currently covers status, display modes and viewport capture. Additional Rhino UI actions from the Windows bridge can be added through the same queue pattern.
 - The backend sidecar is published for `osx-arm64` by default.
-- AI generation depends on valid Gemini/fal.ai/OpenAI API keys configured through the app.
+- AI generation depends on valid Gemini and/or fal.ai API keys configured through the app. OpenAI-branded image models are routed through fal.ai.

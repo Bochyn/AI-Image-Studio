@@ -1,6 +1,6 @@
 # Plugin macOS
 
-Ten przewodnik opisuje natywną wersję Rhino Image Studio dla Rhino 8 na macOS.
+Ten przewodnik opisuje natywną wersję AI Image Studio dla Rhino 8 na macOS.
 
 ## Status
 
@@ -24,7 +24,7 @@ Generowanie AI nadal wymaga poprawnych kluczy API skonfigurowanych w aplikacji.
 
 - macOS z Rhino 8 zainstalowanym w `/Applications/Rhino 8.app`
 - .NET 8 SDK
-- Node.js 18+
+- Node.js 22.x
 - pnpm
 - jq do testów smoke z terminala
 
@@ -40,21 +40,20 @@ PATH=/opt/homebrew/opt/dotnet@8/libexec:$PATH
 Z root repozytorium:
 
 ```bash
-cd /Users/mateuszbochynski/Developer/Rhino-Image-Studio
-git switch feature/rhino-macos-plugin
+cd AI-Image-Studio
 ```
 
 Zbuduj React UI do folderu backendu `wwwroot`:
 
 ```bash
-cd /Users/mateuszbochynski/Developer/Rhino-Image-Studio/src/RhinoImageStudio.UI
+cd src/RhinoImageStudio.UI
 pnpm run build
 ```
 
 Zbuduj i zainstaluj plugin macOS:
 
 ```bash
-cd /Users/mateuszbochynski/Developer/Rhino-Image-Studio
+cd ../..
 
 DOTNET_BIN=/opt/homebrew/opt/dotnet@8/libexec/dotnet \
 DOTNET_ROOT=/opt/homebrew/opt/dotnet@8/libexec \
@@ -192,7 +191,7 @@ Oczekiwane pliki:
 | Komenda | Cel |
 |---------|-----|
 | `ImageStudioMacStatus` | Potwierdza, że plugin macOS się załadował i zapisuje marker statusu. |
-| `ImageStudioStartBackend` | Uruchamia albo podłącza backend sidecar Rhino Image Studio. |
+| `ImageStudioStartBackend` | Uruchamia albo podłącza backend sidecar AI Image Studio. |
 | `ImageStudioOpen` | Uruchamia backend, jeśli trzeba, i otwiera UI w domyślnej przeglądarce. |
 
 ## Notatki architektoniczne
@@ -204,7 +203,7 @@ Build macOS używa backend-mediated bridge:
 1. React woła endpointy HTTP pod `/api/rhino/*`.
 2. Backend kolejkuje work items Rhino w `RhinoBridgeService`.
 3. `MacRhinoBridgeClient` long-polluje `/api/rhino/bridge/next` z procesu Rhino.
-4. Plugin wykonuje operacje RhinoCommon na Rhino UI thread.
+4. Plugin wykonuje viewport capture na Rhino UI thread; RPC dla display/query obecnie wołają współdzielone helpery RhinoCommon bezpośrednio.
 5. Plugin uploaduje captures przez istniejący endpoint `/api/captures`.
 
 Dzięki temu React UI pozostaje w większości wspólne dla Windows i macOS, a wymieniona jest platform-specific bridge layer.
@@ -214,4 +213,4 @@ Dzięki temu React UI pozostaje w większości wspólne dla Windows i macOS, a w
 - macOS obecnie otwiera UI w systemowej przeglądarce, nie jako docked panel Rhino.
 - Bridge obejmuje obecnie status, display modes i viewport capture. Dodatkowe akcje Rhino z Windows bridge można dodać tym samym queue pattern.
 - Backend sidecar domyślnie publikuje się dla `osx-arm64`.
-- Generowanie AI zależy od poprawnych kluczy Gemini/fal.ai/OpenAI skonfigurowanych w aplikacji.
+- Generowanie AI zależy od poprawnych kluczy Gemini i/lub fal.ai skonfigurowanych w aplikacji. Modele obrazowe z nazwą OpenAI są routowane przez fal.ai.

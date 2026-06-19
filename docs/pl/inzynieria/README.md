@@ -1,8 +1,8 @@
 # Dokumentacja inżynierska
 
-Materiały techniczne dla deweloperów, architektów i osób oceniających **Rhino Image Studio** w kontekście rekrutacji lub portfolio.
+Materiały techniczne dla deweloperów, architektów i osób oceniających **AI Image Studio** w kontekście rekrutacji lub portfolio.
 
-> English: [Engineering docs](../engineering/README.md)
+> English: [Engineering docs](../../engineering/README.md)
 
 ## Dla kogo co
 
@@ -12,7 +12,7 @@ Materiały techniczne dla deweloperów, architektów i osób oceniających **Rhi
 | **Senior engineer** | [Jakość kodu i audyt](jakosc-kodu.md) | Co było nie tak, co naprawiono, jak pilnujemy jakości |
 | **Architekt** | [Bridge cross-platform](most-cross-platform.md) + [Architektura](../api/architektura.md) | Najtrudniejszy problem integracyjny |
 | **Security** | [Model bezpieczeństwa](bezpieczenstwo.md) | Sekrety, token bridge, storage |
-| **Kontrybutor** | [Contributing (EN)](../CONTRIBUTING.md) | Build, testy, PR |
+| **Kontrybutor** | [Contributing (EN)](../../CONTRIBUTING.md) | Build, testy, PR |
 
 ## Spis dokumentów
 

@@ -1,6 +1,6 @@
 # Rozwiązywanie Problemów
 
-Rozwiązania najczęstszych problemów napotykanych podczas pracy z Rhino Image Studio.
+Rozwiązania najczęstszych problemów napotykanych podczas pracy z AI Image Studio.
 
 ## Problemy z Uruchomieniem
 
@@ -17,10 +17,10 @@ Rozwiązania najczęstszych problemów napotykanych podczas pracy z Rhino Image 
    ```
 
 ### Plugin nie ładuje się w Rhino
-**Objaw**: Błąd przy instalacji lub brak komendy `RhinoImageStudio`.
+**Objaw**: Błąd przy instalacji lub brak komendy `ImageStudio`.
 **Przyczyna**: Zła wersja Rhino lub brak .NET Framework 4.8.
 **Rozwiązanie**:
-- Upewnij się, że używasz **Rhino 8** na Windows.
+- Upewnij się, że używasz **Rhino 8** na Windows lub macOS.
 - Sprawdź we właściwościach pliku `.rhp` (prawy przycisk myszy -> Właściwości), czy system Windows go nie zablokował ("Unblock").
 - Na macOS przeinstaluj plugin przez `scripts/install-mac-plugin.sh`, zrestartuj Rhino i uruchom:
   ```bash
@@ -52,7 +52,7 @@ Rozwiązania najczęstszych problemów napotykanych podczas pracy z Rhino Image 
 
 ### Błąd "Authentication failed"
 **Przyczyna**: Nieprawidłowy lub brakujący klucz API.
-**Rozwiązanie**: Sprawdź zakładkę Settings i upewnij się, że klucz nie ma spacji na początku/końcu. Wygeneruj nowy klucz na fal.ai.
+**Rozwiązanie**: Sprawdź zakładkę Settings i upewnij się, że klucz nie ma spacji na początku/końcu. Wygeneruj nowy klucz w Google AI Studio albo fal.ai, zależnie od wybranego modelu.
 
 ### Generacja trwa w nieskończoność
 **Przyczyna**: Problem z połączeniem SSE lub przeciążenie serwerów AI.

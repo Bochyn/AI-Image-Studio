@@ -1,57 +1,68 @@
-# Rhino Image Studio
+# AI Image Studio
 
-Wtyczka Rhinoceros 8 (Windows) integrująca AI image generation z workflow architektonicznym. Backend proxy do Gemini/fal.ai + dockowany panel WebView2 z React UI.
+AI Image Studio is a cross-platform Rhinoceros 8 integration for AI-assisted architectural visualization. It combines Rhino plug-in hosts, a shared ASP.NET Core backend and a React UI.
 
 ## Stack
-- **Runtime:** .NET 8 (Backend), .NET Framework 4.8 (Plugin), Node 18+ (UI)
-- **Backend:** ASP.NET Core 8.0, EF Core + SQLite, DPAPI secrets
-- **Frontend:** React 18, Vite 5, TypeScript 5.4, Tailwind CSS 3.4
-- **Key deps:** lucide-react, react-router-dom, clsx, tailwind-merge, date-fns
-- **AI:** Google Gemini API (generate/refine/inpainting), fal.ai (multi-angle, upscale)
-- **Package managers:** dotnet (C#), pnpm (UI) — vite build → Backend/wwwroot
+
+- **Runtime:** .NET 8 backend and macOS plug-in, .NET Framework 4.8 Windows plug-in, Node.js 22.x UI
+- **Backend:** ASP.NET Core 8.0, EF Core + SQLite, ASP.NET Core Data Protection secrets
+- **Frontend:** React 18, Vite 6, TypeScript 5.4, Tailwind CSS 3.4, Geist Mono
+- **AI providers:** Google Gemini API and fal.ai routes for Seedream, GPT Image, Qwen and Topaz
+- **Package managers:** dotnet for C#, pnpm 11.x for UI
 
 ## Structure
 
 | Path | Role |
 |------|------|
-| `src/RhinoImageStudio.Backend/` | ASP.NET Core API — proxy AI, job queue, storage |
-| `src/RhinoImageStudio.Plugin/` | Rhino 8 plugin (.NET 4.8) — viewport capture, WebView2 host |
-| `src/RhinoImageStudio.Shared/` | Shared models, contracts, constants, enums |
-| `src/RhinoImageStudio.UI/` | React SPA — canvas, inspector, masks, compare |
-| `src/RhinoImageStudio.UI/src/lib/models.ts` | Model config — Source of Truth for model capabilities |
-| `src/RhinoImageStudio.Backend/wwwroot/` | Built frontend — auto-generated, nie edytować |
-| `docs/` | User & dev documentation (PL) |
-| `changelog/` | Claude-to-Claude notes (per-day, .gitignore) |
+| `src/RhinoImageStudio.Backend/` | ASP.NET Core API, AI proxy, job queue, storage |
+| `src/RhinoImageStudio.Plugin/` | Windows Rhino 8 plug-in, WebView2 host, docked panel |
+| `src/RhinoImageStudio.Plugin.Mac/` | macOS Rhino 8 plug-in, backend sidecar and HTTP bridge |
+| `src/RhinoImageStudio.Plugin.RhinoCommon/` | Shared RhinoCommon capture, upload and display-query helpers |
+| `src/RhinoImageStudio.Shared/` | Shared models, contracts, constants and enums |
+| `src/RhinoImageStudio.UI/` | React SPA: canvas, inspector, masks, compare, gallery |
+| `src/RhinoImageStudio.UI/src/lib/models.ts` | Source of truth for model capabilities |
+| `src/RhinoImageStudio.Backend/wwwroot/` | Generated frontend build output; do not edit manually |
+| `docs/` | English primary docs plus Polish mirrors under `docs/pl/` |
 
 ## Workflows
+
 ```bash
-dev:      cd src/RhinoImageStudio.UI && pnpm run dev            # Frontend dev (needs backend)
-build-ui: cd src/RhinoImageStudio.UI && tsc && pnpm run build   # Build UI → wwwroot
-backend:  cd src/RhinoImageStudio.Backend && dotnet run        # localhost:17532
-solution: cd src && dotnet build RhinoImageStudio.sln          # Build all C#
+# Frontend dev
+cd src/RhinoImageStudio.UI && pnpm run dev
+
+# Build UI into Backend/wwwroot
+cd src/RhinoImageStudio.UI && pnpm run build
+
+# Backend
+cd src/RhinoImageStudio.Backend && dotnet run
+
+# Windows solution
+dotnet build src/RhinoImageStudio.sln
+
+# macOS solution
+dotnet build src/RhinoImageStudio.Mac.sln
 ```
 
 ## Key Architecture
-- **2-image Gemini pipeline:** Masks as colored overlay (source + overlay), no native mask param
-- **Model-aware UI:** InspectorPanel adapts AR/Resolution/mask limits per model (`models.ts`)
-- **Soft-delete:** Generations archived (IsArchived), hard delete requires archived first
-- **SSE progress:** Real-time job status via `/api/projects/{id}/events`
-- **DPAPI secrets:** API keys via Windows Data Protection, not in code
 
-## Design System
-- **Palette:** Mono-Theme — achromatyczny + teal accent — CSS vars (`--text`, `--primary`, `--border`, etc.)
-- **Font:** Geist Mono | **Theme:** Light + Dark mode | **Radius:** 0 (ostre krawędzie)
-- **Full spec:** `docs/api/architektura.md` → sekcja "Design System"
+- **2-image Gemini pipeline:** masks are sent as a colored overlay with per-layer instructions.
+- **Model-aware UI:** `models.ts` drives available AR, resolution, reference and mask controls.
+- **Soft-delete:** generations are archived first; permanent delete requires archived state.
+- **SSE progress:** job status streams through per-subscriber `/api/events` and project event endpoints.
+- **Cross-platform bridge:** Windows uses WebView2 host objects; macOS uses backend-mediated HTTP RPC with a local bridge token.
+- **Local encrypted secrets:** provider keys are stored through local encrypted storage, not source config.
 
 ## Conventions
-- **Language:** PL user-facing docs, EN code + comments
-- **Commits:** `git commit --author="Claude <claude@anthropic.com>"`
-- **Style:** Conventional Commits (`feat(scope):`, `fix(scope):`, `docs:`)
+
+- Public docs are English-first; Polish mirrors live under `docs/pl/`.
+- Code, comments, commits and durable technical docs are in English.
+- Use Conventional Commits (`feat(scope):`, `fix(scope):`, `docs:`).
+- Keep `models.ts` as the UI source of truth for model capabilities.
 
 ## Constraints
-- MUST read file before editing
-- MUST NOT commit without explicit user approval
-- MUST NOT push without explicit user approval
-- MUST NOT rewrite entire files — surgical edits only
-- MUST NOT hardcode API keys in source code
-- MUST keep `models.ts` as single source of truth for model capabilities
+
+- Read files before editing.
+- Prefer small, reviewable edits.
+- Do not edit `src/RhinoImageStudio.Backend/wwwroot/` manually; rebuild the UI.
+- Do not hardcode API keys or local secrets.
+- Do not commit or push unless the user explicitly asks for a commit/PR workflow.

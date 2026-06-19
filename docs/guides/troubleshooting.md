@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Solutions to the most common problems you may run into with Rhino Image Studio.
+Solutions to the most common problems you may run into with AI Image Studio.
 
 ## Startup Problems
 
@@ -17,7 +17,7 @@ Solutions to the most common problems you may run into with Rhino Image Studio.
    ```
 
 ### Plugin doesn't load in Rhino
-**Symptom**: Install error or no `RhinoImageStudio` command.
+**Symptom**: Install error or no `ImageStudio` command.
 **Cause**: Wrong Rhino version or missing .NET Framework 4.8.
 **Fix**:
 - Make sure you're on **Rhino 8** for Windows.

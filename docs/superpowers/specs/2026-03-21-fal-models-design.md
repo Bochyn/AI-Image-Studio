@@ -5,7 +5,7 @@
 
 ## Summary
 
-Add two new fal.ai models to Rhino Image Studio: `fal-ai/bytedance/seedream/v5/lite/edit` (Seedream) and `fal-ai/gpt-image-1.5/edit` (GPT-Image). Both available for Generate and Refine modes. No mask support (prompt engineering only). No new backend code paths for masks.
+Add two new fal.ai models to AI Image Studio: `fal-ai/bytedance/seedream/v5/lite/edit` (Seedream) and `fal-ai/gpt-image-1.5/edit` (GPT-Image). Both available for Generate and Refine modes. No mask support (prompt engineering only). No new backend code paths for masks.
 
 ## 1. Seedream v5 Lite Edit
 
