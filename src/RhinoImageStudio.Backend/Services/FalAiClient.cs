@@ -46,7 +46,7 @@ public class FalAiClient : IFalAiClient
 
     private async Task<string> GetApiKeyAsync()
     {
-        var apiKey = await _secretStorage.GetSecretAsync("fal_api_key");
+        var apiKey = await _secretStorage.GetSecretAsync(SecretKeyNames.FalApiKey);
         if (string.IsNullOrEmpty(apiKey))
         {
             throw new InvalidOperationException("fal.ai API key not configured. Please set it in Settings.");

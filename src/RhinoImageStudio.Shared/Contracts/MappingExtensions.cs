@@ -60,4 +60,20 @@ public static class MappingExtensions
         r.ThumbnailPath != null ? $"/images/{r.ThumbnailPath}" : null,
         r.CreatedAt
     );
+
+    public static ProjectDto ToDto(
+        this Project project,
+        int captureCount,
+        int generationCount,
+        string? lastThumbnailUrl = null) => new(
+        project.Id,
+        project.Name,
+        project.Description,
+        project.CreatedAt,
+        project.UpdatedAt,
+        project.IsPinned,
+        captureCount,
+        generationCount,
+        lastThumbnailUrl
+    );
 }

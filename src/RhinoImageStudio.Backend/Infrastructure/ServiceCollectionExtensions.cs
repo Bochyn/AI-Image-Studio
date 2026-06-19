@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using RhinoImageStudio.Backend.Data;
 using RhinoImageStudio.Backend.Options;
 using RhinoImageStudio.Backend.Services;
+using RhinoImageStudio.Backend.Services.Generations;
 using RhinoImageStudio.Backend.Services.Jobs;
 
 namespace RhinoImageStudio.Backend.Infrastructure;
@@ -32,6 +33,9 @@ public static class ServiceCollectionExtensions
             .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
         services.AddSingleton<ISecretStorage, DataProtectionSecretStorage>();
         services.AddSingleton<IStorageService, StorageService>();
+        services.AddScoped<IConfigService, ConfigService>();
+        services.AddSingleton<GenerationDebugService>();
+        services.AddSingleton<GenerationMaskService>();
 
         services.AddHttpClient<IFalAiClient, FalAiClient>()
             .AddStandardResilienceHandler(options =>

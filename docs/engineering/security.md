@@ -28,7 +28,7 @@ Key names centralized in `SecretKeyNames` (Shared) — avoids string drift acros
 
 ### Verification
 
-`POST /api/config/verify-gemini-key` performs a minimal Gemini API call before persisting.
+`POST /api/config/verify-gemini-key` calls Gemini via `IGeminiClient.VerifyApiKeyAsync` using the `x-goog-api-key` header (never in the URL).
 
 ### What not to commit
 
@@ -51,6 +51,16 @@ See [SECURITY.md](../../SECURITY.md): `.env`, local databases, captures, `bridge
 
 This is **localhost boundary hardening**, not user authentication. It stops casual cross-process abuse (other dev tools, stray scripts) on poll/complete endpoints.
 
+### UI session token
+
+Mutating API routes (`POST`/`PUT`/`DELETE` on projects, jobs, config, captures, etc.) require the same `X-Rhino-Bridge-Token` header.
+
+1. `GET /api/bootstrap` returns the localhost token for the React UI (macOS browser + Vite dev).
+2. WebView2 panel injects `window.__RHINO_LOCAL_TOKEN` before navigation.
+3. UI attaches the header on all mutating `fetch` calls via `apiFetch()`.
+
+This does not replace user accounts — it ensures only callers that obtained the shared localhost token can enqueue paid jobs or overwrite API keys.
+
 UI-initiated bridge calls (`/api/rhino/capture`, display queries) remain open to any localhost caller while the macOS plugin is connected. That is acceptable for the single-seat desktop threat model but allows local queue flooding.
 
 → Design context: [Cross-platform bridge](cross-platform-bridge.md)
@@ -62,12 +72,15 @@ UI-initiated bridge calls (`/api/rhino/capture`, display queries) remain open to
 **Path traversal fix:**
 
 ```csharp
-var absolutePath = Path.GetFullPath(Path.Combine(BasePath, normalizedPath));
-if (!absolutePath.StartsWith(BasePath, StringComparison.OrdinalIgnoreCase))
+var root = Path.GetFullPath(BasePath);
+if (!root.EndsWith(Path.DirectorySeparatorChar))
+    root += Path.DirectorySeparatorChar;
+var absolutePath = Path.GetFullPath(Path.Combine(root, normalizedPath));
+if (!absolutePath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
     throw new UnauthorizedAccessException(...);
 ```
 
-User-supplied paths in `/images/{**path}` cannot escape the storage directory via `..` segments.
+User-supplied paths in `/images/{**path}` cannot escape the storage directory via `..` segments or sibling-directory prefix tricks (`data` vs `data-evil`).
 
 ## AI provider proxy
 

@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -18,6 +19,7 @@ public interface IGeminiClient
 {
     Task<GeminiImageResult> GenerateImageAsync(string prompt, byte[]? sourceImage = null, byte[]? overlayImage = null, List<byte[]>? referenceImages = null, GeminiImageConfig? config = null, List<MaskImageData>? maskImages = null, CancellationToken cancellationToken = default);
     Task<GeminiImageResult> EditImageAsync(string prompt, byte[] sourceImage, List<byte[]>? referenceImages = null, GeminiImageConfig? config = null, CancellationToken cancellationToken = default);
+    Task<GeminiKeyVerificationResult> VerifyApiKeyAsync(CancellationToken cancellationToken = default);
 }
 
 public class GeminiClient : IGeminiClient
@@ -47,12 +49,41 @@ public class GeminiClient : IGeminiClient
 
     private async Task<string> GetApiKeyAsync()
     {
-        var apiKey = await _secretStorage.GetSecretAsync("gemini_api_key");
+        var apiKey = await _secretStorage.GetSecretAsync(SecretKeyNames.GeminiApiKey);
         if (string.IsNullOrEmpty(apiKey))
-        {
             throw new InvalidOperationException("Gemini API key not configured. Please set it in Settings.");
-        }
+
         return apiKey;
+    }
+
+    public async Task<GeminiKeyVerificationResult> VerifyApiKeyAsync(CancellationToken cancellationToken = default)
+    {
+        var apiKey = await _secretStorage.GetSecretAsync(SecretKeyNames.GeminiApiKey);
+        if (string.IsNullOrEmpty(apiKey))
+            return new GeminiKeyVerificationResult(false, "No Gemini API key configured");
+
+        try
+        {
+            using var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                GeminiApiBaseUrl);
+            request.Headers.Add("x-goog-api-key", apiKey);
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (response.IsSuccessStatusCode)
+                return new GeminiKeyVerificationResult(true, null);
+
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            return new GeminiKeyVerificationResult(false, $"API returned {response.StatusCode}: {body}");
+        }
+        catch (TaskCanceledException)
+        {
+            return new GeminiKeyVerificationResult(false, "Connection timed out (5s)");
+        }
+        catch (HttpRequestException ex)
+        {
+            return new GeminiKeyVerificationResult(false, $"Connection failed: {ex.Message}");
+        }
     }
 
     public async Task<GeminiImageResult> GenerateImageAsync(
@@ -174,14 +205,18 @@ public class GeminiClient : IGeminiClient
         CancellationToken cancellationToken)
     {
         var apiKey = await GetApiKeyAsync();
-        var url = $"{GeminiApiBaseUrl}/{model}:generateContent?key={apiKey}";
+        var url = $"{GeminiApiBaseUrl}/{model}:generateContent";
 
         var jsonContent = JsonSerializer.Serialize(requestBody, _jsonOptions);
-        var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+        using var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
+        };
+        request.Headers.Add("x-goog-api-key", apiKey);
 
         _logger.LogDebug("Sending request to Gemini API: {Model}", model);
 
-        var response = await _httpClient.PostAsync(url, content, cancellationToken);
+        var response = await _httpClient.SendAsync(request, cancellationToken);
         var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)

@@ -106,8 +106,8 @@ Bridge token is stored in `%LOCALAPPDATA%/RhinoImageStudio/bridge.token` (see [S
 - `Program.cs` — slim bootstrap (middleware, endpoint mapping).
 - `Infrastructure/` — `DatabaseInitializer`, `ServiceCollectionExtensions`.
 - `Endpoints/` — feature-grouped Minimal API (`Capture`, `Config`, `Events`, `Generation`, `Image`, `Job`, `Project`, `RhinoBridge`).
-- `Validation/` — `GenerateRequestValidator` (mask limits, model rules).
-- `Services/` — `JobProcessor`, `FalInputBuilder`, `BridgeTokenService`, `RhinoBridgeService`, `PromptBuilder`, etc.
+- `Validation/` — request validators (`GenerateRequestValidator`, `JobRequestValidators`, `ProjectValidator`).
+- `Services/` — `JobProcessor`, `ConfigService`, generation query/debug/mask services, `FalModelResolver`, etc.
 - `MappingExtensions.cs` — model → DTO mapping.
 #### Key technical improvements
 
@@ -357,14 +357,15 @@ All return `202 Accepted` with a `JobDto`.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| GET | `/api/bootstrap` | Localhost session token for UI (`X-Rhino-Bridge-Token` on mutating routes) |
 | GET | `/api/config` | Current configuration (`ConfigDto`) |
-| POST | `/api/config/api-key` | Legacy: set fal.ai key (`SetApiKeyRequest`) |
-| POST | `/api/config/gemini-api-key` | Set Gemini key (`SetGeminiApiKeyRequest`) |
-| POST | `/api/config/fal-api-key` | Set fal.ai key (`SetFalApiKeyRequest`) |
-| POST | `/api/config/verify-gemini-key` | Verify the Gemini API key (test call to models) |
+| POST | `/api/config/gemini-api-key` | Set Gemini key (`SetGeminiApiKeyRequest`) — requires local token |
+| POST | `/api/config/fal-api-key` | Set fal.ai key (`SetFalApiKeyRequest`) — requires local token |
+| POST | `/api/config/verify-gemini-key` | Verify the Gemini API key via `x-goog-api-key` header |
 | DELETE | `/api/config/secrets/gemini` | Remove the Gemini API key from encrypted storage |
+| DELETE | `/api/config/secrets/fal` | Remove the fal.ai API key from encrypted storage |
 
-> The frontend client (`src/RhinoImageStudio.UI/src/lib/api.ts`) actively uses `gemini-api-key` and `fal-api-key`; the legacy `setApiKey` method has been removed from UI code.
+> Mutating config routes require `X-Rhino-Bridge-Token`. The UI obtains the token from `GET /api/bootstrap` (macOS browser / Vite dev) or `window.__RHINO_LOCAL_TOKEN` (WebView2 injection).
 
 ### Events (SSE)
 

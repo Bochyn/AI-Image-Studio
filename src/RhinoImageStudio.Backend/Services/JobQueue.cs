@@ -1,6 +1,5 @@
 using System.Threading.Channels;
 using RhinoImageStudio.Shared.Models;
-using RhinoImageStudio.Shared.Enums;
 
 namespace RhinoImageStudio.Backend.Services;
 
@@ -15,18 +14,20 @@ public interface IJobQueue
 }
 
 /// <summary>
-/// Thread-safe background job queue using System.Threading.Channels
+/// Thread-safe background job queue using System.Threading.Channels.
 /// </summary>
 public class JobQueue : IJobQueue
 {
+    private const int MaxQueueSize = 64;
+
     private readonly Channel<Job> _channel;
     private int _queueCount;
 
     public JobQueue()
     {
-        // Unbounded channel with single reader for optimal performance
-        _channel = Channel.CreateUnbounded<Job>(new UnboundedChannelOptions
+        _channel = Channel.CreateBounded<Job>(new BoundedChannelOptions(MaxQueueSize)
         {
+            FullMode = BoundedChannelFullMode.Wait,
             SingleReader = true,
             SingleWriter = false
         });
@@ -36,8 +37,7 @@ public class JobQueue : IJobQueue
 
     public async ValueTask EnqueueAsync(Job job, CancellationToken cancellationToken = default)
     {
-        if (job == null)
-            throw new ArgumentNullException(nameof(job));
+        ArgumentNullException.ThrowIfNull(job);
 
         await _channel.Writer.WriteAsync(job, cancellationToken);
         Interlocked.Increment(ref _queueCount);

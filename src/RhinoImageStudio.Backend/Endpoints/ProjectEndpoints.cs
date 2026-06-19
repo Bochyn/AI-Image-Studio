@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RhinoImageStudio.Backend.Data;
+using RhinoImageStudio.Backend.Infrastructure;
 using RhinoImageStudio.Backend.Services;
 using RhinoImageStudio.Shared.Contracts;
 using RhinoImageStudio.Shared.Models;
@@ -18,6 +19,7 @@ public static class ProjectEndpoints
         api.MapGet("/projects", async (AppDbContext db, CancellationToken ct) =>
         {
             var projects = await db.Projects
+                .AsNoTracking()
                 .OrderByDescending(s => s.IsPinned)
                 .ThenByDescending(s => s.UpdatedAt)
                 .Select(s => new ProjectDto(
@@ -44,23 +46,46 @@ public static class ProjectEndpoints
 
         api.MapGet("/projects/{id:guid}", async (Guid id, AppDbContext db, CancellationToken ct) =>
         {
-            var project = await db.Projects.FindAsync(new object[] { id }, ct);
-            return project is null ? Results.NotFound() : Results.Ok(project);
+            var project = await db.Projects
+                .AsNoTracking()
+                .Where(p => p.Id == id)
+                .Select(p => new
+                {
+                    Project = p,
+                    CaptureCount = p.Captures.Count,
+                    GenerationCount = p.Generations.Count(g => !g.IsArchived),
+                    LastThumbnail = p.Generations
+                        .Where(g => !g.IsArchived)
+                        .OrderByDescending(g => g.CreatedAt)
+                        .Select(g => g.ThumbnailPath)
+                        .FirstOrDefault()
+                })
+                .FirstOrDefaultAsync(ct);
+
+            return project is null
+                ? Results.NotFound()
+                : Results.Ok(project.Project.ToDto(
+                    project.CaptureCount,
+                    project.GenerationCount,
+                    ToImageUrl(project.LastThumbnail)));
         });
 
         api.MapPost("/projects", async (CreateProjectRequest request, AppDbContext db, CancellationToken ct) =>
         {
+            if (string.IsNullOrWhiteSpace(request.Name))
+                return Results.BadRequest("Name is required");
+
             var project = new Project
             {
-                Name = request.Name,
+                Name = request.Name.Trim(),
                 Description = request.Description
             };
 
             db.Projects.Add(project);
             await db.SaveChangesAsync(ct);
 
-            return Results.Created($"/api/projects/{project.Id}", project);
-        });
+            return Results.Created($"/api/projects/{project.Id}", project.ToDto(0, 0));
+        }).RequireLocalApiToken();
 
         api.MapPut("/projects/{id:guid}", async (Guid id, UpdateProjectRequest request, AppDbContext db, CancellationToken ct) =>
         {
@@ -73,8 +98,15 @@ public static class ProjectEndpoints
             project.UpdatedAt = DateTime.UtcNow;
 
             await db.SaveChangesAsync(ct);
-            return Results.Ok(project);
-        });
+
+            var counts = await db.Projects
+                .AsNoTracking()
+                .Where(p => p.Id == id)
+                .Select(p => new { CaptureCount = p.Captures.Count, GenerationCount = p.Generations.Count(g => !g.IsArchived) })
+                .FirstAsync(ct);
+
+            return Results.Ok(project.ToDto(counts.CaptureCount, counts.GenerationCount));
+        }).RequireLocalApiToken();
 
         api.MapDelete("/projects/{id:guid}", async (Guid id, AppDbContext db, IStorageService storage, CancellationToken ct) =>
         {
@@ -110,7 +142,7 @@ public static class ProjectEndpoints
             await db.SaveChangesAsync(ct);
 
             return Results.NoContent();
-        });
+        }).RequireLocalApiToken();
 
         return api;
     }

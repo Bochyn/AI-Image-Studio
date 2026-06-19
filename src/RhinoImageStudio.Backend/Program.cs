@@ -74,6 +74,8 @@ if (app.Environment.IsDevelopment())
 app.UseStaticFiles();
 
 var api = app.MapGroup("/api");
+api.MapGet("/bootstrap", (IBridgeTokenService tokenService) =>
+    Results.Ok(new { token = tokenService.Token }));
 api.MapProjectEndpoints();
 api.MapCaptureEndpoints();
 api.MapGenerationEndpoints();

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RhinoImageStudio.Backend.Data;
+using RhinoImageStudio.Backend.Infrastructure;
 using RhinoImageStudio.Backend.Services;
 using RhinoImageStudio.Backend.Validation;
 using RhinoImageStudio.Shared.Constants;
@@ -16,6 +17,7 @@ public static class JobEndpoints
         api.MapGet("/projects/{projectId:guid}/jobs", async (Guid projectId, AppDbContext db, CancellationToken ct) =>
         {
             var jobs = await db.Jobs
+                .AsNoTracking()
                 .Where(j => j.ProjectId == projectId)
                 .OrderByDescending(j => j.CreatedAt)
                 .ToListAsync(ct);
@@ -35,19 +37,11 @@ public static class JobEndpoints
 
             var logger = loggerFactory.CreateLogger("JobEndpoints");
 
-            if (job.Status == JobStatus.Queued || job.Status == JobStatus.Running)
+            if (job.Status is JobStatus.Queued or JobStatus.Running)
             {
                 if (!string.IsNullOrEmpty(job.FalRequestId))
                 {
-                    var modelId = job.ProviderModelId ?? job.Type switch
-                    {
-                        JobType.Generate => FalModels.NanoBananaEdit,
-                        JobType.Refine => FalModels.NanoBananaEdit,
-                        JobType.MultiAngle => FalModels.QwenMultipleAngles,
-                        JobType.Upscale => FalModels.TopazUpscale,
-                        _ => FalModels.NanoBananaEdit
-                    };
-
+                    var modelId = FalModelResolver.ResolveModelId(job);
                     try
                     {
                         await falClient.CancelAsync(modelId, job.FalRequestId, ct);
@@ -64,35 +58,53 @@ public static class JobEndpoints
             }
 
             return Results.Ok(job.ToDto());
-        });
+        }).RequireLocalApiToken();
 
         api.MapPost("/generate", async (GenerateRequest request, AppDbContext db, IJobQueue jobQueue, CancellationToken ct) =>
         {
-            var validationError = GenerateRequestValidator.Validate(request);
+            var validationError = GenerateRequestValidator.Validate(request)
+                ?? await ProjectValidator.EnsureExistsAsync(db, request.ProjectId, ct);
             if (validationError != null)
                 return Results.BadRequest(validationError);
 
             var job = await EnqueueJobAsync(db, jobQueue, request.ProjectId, JobType.Generate, request, request.Model, ct);
             return Results.Accepted($"/api/jobs/{job.Id}", job.ToDto());
-        });
+        }).RequireLocalApiToken();
 
         api.MapPost("/refine", async (RefineRequest request, AppDbContext db, IJobQueue jobQueue, CancellationToken ct) =>
         {
+            var validationError = JobRequestValidators.Validate(request)
+                ?? await ProjectValidator.EnsureExistsAsync(db, request.ProjectId, ct);
+            if (validationError != null)
+                return Results.BadRequest(validationError);
+
             var job = await EnqueueJobAsync(db, jobQueue, request.ProjectId, JobType.Refine, request, null, ct);
             return Results.Accepted($"/api/jobs/{job.Id}", job.ToDto());
-        });
+        }).RequireLocalApiToken();
 
         api.MapPost("/multi-angle", async (MultiAngleRequest request, AppDbContext db, IJobQueue jobQueue, CancellationToken ct) =>
         {
-            var job = await EnqueueJobAsync(db, jobQueue, request.ProjectId, JobType.MultiAngle, request, FalModels.QwenMultipleAngles, ct);
+            var validationError = JobRequestValidators.Validate(request)
+                ?? await ProjectValidator.EnsureExistsAsync(db, request.ProjectId, ct);
+            if (validationError != null)
+                return Results.BadRequest(validationError);
+
+            var job = await EnqueueJobAsync(
+                db, jobQueue, request.ProjectId, JobType.MultiAngle, request, FalModels.QwenMultipleAngles, ct);
             return Results.Accepted($"/api/jobs/{job.Id}", job.ToDto());
-        });
+        }).RequireLocalApiToken();
 
         api.MapPost("/upscale", async (UpscaleRequest request, AppDbContext db, IJobQueue jobQueue, CancellationToken ct) =>
         {
-            var job = await EnqueueJobAsync(db, jobQueue, request.ProjectId, JobType.Upscale, request, FalModels.TopazUpscale, ct);
+            var validationError = JobRequestValidators.Validate(request)
+                ?? await ProjectValidator.EnsureExistsAsync(db, request.ProjectId, ct);
+            if (validationError != null)
+                return Results.BadRequest(validationError);
+
+            var job = await EnqueueJobAsync(
+                db, jobQueue, request.ProjectId, JobType.Upscale, request, FalModels.TopazUpscale, ct);
             return Results.Accepted($"/api/jobs/{job.Id}", job.ToDto());
-        });
+        }).RequireLocalApiToken();
 
         return api;
     }
