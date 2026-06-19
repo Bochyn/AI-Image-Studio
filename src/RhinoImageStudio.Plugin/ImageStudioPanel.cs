@@ -94,7 +94,7 @@ public class ImageStudioPanel : Eto.Forms.Panel, IPanel
             var localToken = BridgeTokenReader.ReadToken();
             if (!string.IsNullOrEmpty(localToken))
             {
-                var escapedToken = localToken.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("'", "\\'", StringComparison.Ordinal);
+                var escapedToken = localToken.Replace("\\", "\\\\").Replace("'", "\\'");
                 await _webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
                     $"window.__RHINO_LOCAL_TOKEN='{escapedToken}';");
             }
