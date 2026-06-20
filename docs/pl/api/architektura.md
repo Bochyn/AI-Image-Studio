@@ -1,6 +1,6 @@
 # Architektura Systemu
 
-Rhino Image Studio to system hybrydowy łączący środowisko desktopowe CAD z nowoczesnym stosem webowym (.NET 8 + React). Pluginy Windows i macOS współdzielą backend oraz UI, ale używają różnych implementacji Rhino bridge.
+AI Image Studio to system hybrydowy łączący środowisko desktopowe CAD z nowoczesnym stosem webowym (.NET 8 + React). Pluginy Windows i macOS współdzielą backend oraz UI, ale używają różnych implementacji Rhino bridge.
 
 ## Diagram Komponentów
 
@@ -11,8 +11,8 @@ graph TD
     Rhino --> MacPlugin[Plugin macOS .NET 8]
     WinPlugin -- WebView2 COM bridge --> UI[React UI]
     MacPlugin -- HTTP long-poll bridge --> Backend[Backend .NET 8]
-    WinPlugin -- Capture Viewport --> RhinoCommon[RhinoCommon API]
-    MacPlugin -- Capture Viewport --> RhinoCommon
+    WinPlugin -- RhinoView.CaptureToBitmap --> RhinoCommon[RhinoCommon API]
+    MacPlugin -- RhinoView.CaptureToBitmap --> RhinoCommon
 
     UI -- HTTP/SSE --> Backend
     Backend -- REST --> FalAI[Fal.ai API]
@@ -29,9 +29,9 @@ graph TD
 
 - **Technologia**: .NET Framework 4.8.
 - **Zadania**:
-  - Rejestracja komend (`RhinoImageStudio`).
+  - Rejestracja komend (`ImageStudio`, `ShowImageStudio`, `ImageStudioCapture`).
   - Tworzenie panelu dokowanego.
-  - Przechwytywanie obrazu z viewportu (`ViewCapture`).
+  - Przechwytywanie obrazu z viewportu (`RhinoView.CaptureToBitmap`).
   - Hosting React UI przez WebView2.
 
 #### Windows RhinoBridge (WebView2 JS Bridge)
@@ -49,9 +49,9 @@ Obiekt `RhinoBridge` jest eksponowany do JavaScript przez `WebView2.AddHostObjec
 | `SetActiveViewport` | `(name) → bool` | Ustawia aktywny viewport po nazwie |
 | `ZoomSelected` | `() → void` | Zoom do zaznaczonych obiektów |
 | `ZoomExtents` | `() → void` | Zoom do wszystkich obiektów |
-| `RunCommand` | `(command) → void` | Wykonuje dowolną komendę Rhino |
+| `RunCommand` | `(command) → void` | Uruchamia skrypt komendy Rhino przez `RhinoApp.RunScript(command, false)`; przeznaczone dla kontrolowanych akcji UI. |
 
-Wszystkie metody operujące na Rhino są wewnętrznie dispatched na UI thread (`RhinoApp.InvokeOnUiThread`).
+Praca Rhino API jest kolejkowana przez `RhinoApp.InvokeOnUiThread` w `RhinoUiThread.RunAsync<T>`. Metody WebView2 host-object pozostają synchroniczne na granicy JavaScript, więc po zakolejkowaniu pracy czekają przez `.GetAwaiter().GetResult()`.
 
 #### Plugin macOS (`src/RhinoImageStudio.Plugin.Mac`)
 
@@ -71,8 +71,18 @@ macOS nie wspiera Windowsowego bridge WebView2/COM. Ścieżka macOS zastępuje `
 1. React woła endpointy HTTP pod `/api/rhino/*`.
 2. `RhinoBridgeService` kolejkuje work items w backendzie.
 3. `MacRhinoBridgeClient` long-polluje `/api/rhino/bridge/next` z procesu Rhino.
-4. Plugin wykonuje pracę RhinoCommon na Rhino UI thread.
-5. Captures są uploadowane przez istniejący endpoint `/api/captures`.
+4. Plugin wykonuje viewport capture na Rhino UI thread; RPC dla display/query obecnie wołają współdzielone helpery RhinoCommon bezpośrednio.
+5. Wyniki są odsyłane do `POST /api/rhino/bridge/{requestId}/complete`.
+6. Captures są uploadowane przez istniejący endpoint `/api/captures`.
+
+### Oficjalne referencje RhinoCommon
+
+| Obszar | Oficjalna referencja | Użycie w projekcie |
+|--------|----------------------|--------------------|
+| Namespaces | [RhinoCommon API](https://developer.rhino3d.com/api/rhinocommon/) | `Rhino.Commands`, `Rhino.Display`, `Rhino.PlugIns`, `Rhino.UI` |
+| View capture | [Rhino.Display.RhinoView](https://developer.rhino3d.com/api/rhinocommon/rhino.display.rhinoview) | `RhinoView.CaptureToBitmap(Size)` i `RhinoView.CaptureToBitmap(Size, DisplayModeDescription)` |
+| UI thread | [RhinoApp.InvokeOnUiThread](https://developer.rhino3d.com/api/rhinocommon/rhino.rhinoapp/invokeonuithread) | `RhinoUiThread.RunAsync<T>` |
+| Plug-in lifecycle | [Rhino.PlugIns.PlugIn](https://developer.rhino3d.com/api/rhinocommon/rhino.plugins.plugin) | `PlugInLoadTime`, `OnLoad`, rejestracja komend |
 
 ### 2. Backend (`src/RhinoImageStudio.Backend`)
 - **Technologia**: ASP.NET Core 8.0.
@@ -86,9 +96,10 @@ macOS nie wspiera Windowsowego bridge WebView2/COM. Ścieżka macOS zastępuje `
 #### Struktura backendu po refaktorze
 
 - `Program.cs` pełni rolę bootstrapu (DI, middleware, mapowanie endpoint groups).
-- 37 endpointów wyekstrahowanych z `Program.cs` do 7 plików w katalogu `Endpoints/`:
+- Endpointy są wyekstrahowane z `Program.cs` do 8 plików w katalogu `Endpoints/`:
   - `CaptureEndpoints.cs`, `ConfigEndpoints.cs`, `EventEndpoints.cs`,
-  - `GenerationEndpoints.cs`, `ImageEndpoints.cs`, `JobEndpoints.cs`, `ProjectEndpoints.cs`.
+  - `GenerationEndpoints.cs`, `ImageEndpoints.cs`, `JobEndpoints.cs`, `ProjectEndpoints.cs`,
+  - `RhinoBridgeEndpoints.cs`.
 - Mapowanie modeli na DTO jest scentralizowane w `MappingExtensions.cs` (`ToDto()`).
 - Kontrakt API został zachowany: trasy, kształty DTO i format SSE pozostały kompatybilne.
 
@@ -98,15 +109,15 @@ macOS nie wspiera Windowsowego bridge WebView2/COM. Ścieżka macOS zastępuje `
 - **HttpClient lifecycle**: pobieranie obrazów używa `IHttpClientFactory` (`ImageDownloader`).
 - **Resilience**: klienci HTTP mają `AddStandardResilienceHandler()`.
 - **PromptBuilder**: wyekstrahowany serwis do budowania promptów z maskami/overlay (shared między Generate i Refine).
-- **JobProcessor**: obsługuje modele Seedream i GPT-Image via `FalAiClient.RunSyncAsync` z queue polling i URL-based routing.
+- **JobProcessor**: obsługuje modele Gemini i fal.ai; `ProviderModelId` jest zapisywany przy enqueue dla poprawnego cancel routing.
 - **Storage security**: `StorageService.GetAbsolutePath()` waliduje ścieżkę po `Path.GetFullPath` (ochrona przed path traversal).
-- **Thumbnail pipeline**: miniatury są faktycznie resize'owane do max 256 px (ImageSharp).
-- **Konfiguracja przez IOptions**: `StorageService` i `DpapiSecretStorage` korzystają z `StorageOptions`/`SecretStorageOptions`.
+- **Thumbnail pipeline**: miniatury są zapisywane lokalnie razem z captures/generations.
+- **Konfiguracja przez IOptions**: storage i secret storage korzystają ze skonfigurowanych opcji aplikacji.
 - **Cross-platform secret storage**: `DataProtectionSecretStorage` zastępuje DPAPI-only encryption dla kompatybilności .NET 8/macOS.
 - **Rhino bridge queue**: `RhinoBridgeService` koordynuje work items UI-to-Rhino na macOS.
 
 ### 3. Frontend UI (`src/RhinoImageStudio.UI`)
-- **Technologia**: React 18, Vite 5, TypeScript 5.4, Tailwind CSS 3.4.
+- **Technologia**: React 18, Vite 6, TypeScript 5.4, Tailwind CSS 3.4.
 - **Package manager**: pnpm (z `node-linker=hoisted`).
 - **Typografia**: Geist Mono (jedyna czcionka — monospace, hierarchia przez wagi i rozmiary).
 - **Zadania**:
@@ -169,7 +180,7 @@ Dodatkowe tokeny utility: `--radius: 0rem` (ostre krawędzie, zero zaokrągleń)
 <div className="bg-card hover:bg-card-hover">Card</div>
 ```
 
-Pełna specyfikacja w sekcji Design System powyżej oraz w `CLAUDE.md`.
+Pełna specyfikacja znajduje się w sekcji Design System powyżej.
 
 ## Konfiguracja Modeli AI
 
@@ -213,6 +224,7 @@ interface ModelCapabilities {
 | **Gemini 3 Pro** | Gemini | 1K, 2K, 4K | 10 ratios (standard) | Max 11 | Max 8 | - |
 | **Seedream v5 Lite** | fal.ai | Auto 2K/3K + presety | 8 presetów | Max 9 | - | - |
 | **GPT-Image 1.5** | fal.ai | Pixel-based | 4 opcje | Max 4 | - | - |
+| **GPT Image 2** | fal.ai | Presety | 7 opcji | Max 4 | - | - |
 | **Qwen Multi-Angle** | fal.ai | - | - | - | - | Multi-angle |
 | **Topaz Upscale** | fal.ai | - | - | - | - | Upscale |
 
@@ -220,6 +232,7 @@ interface ModelCapabilities {
 **Gemini 3 Pro** (`gemini-3-pro-image-preview`) — wyższa jakość, standardowe AR (10 ratios). Max 14 obrazów per request.
 **Seedream v5 Lite** (`fal-ai/bytedance/seedream/v5/lite/edit`) — ByteDance, edycja obrazów do 3K. Obsługuje referencje (max 9), presety rozmiarów (Auto 2K/3K, square, portrait, landscape).
 **GPT-Image 1.5** (`fal-ai/gpt-image-1.5/edit`) — OpenAI, edycja z kontrolą quality/fidelity. Obsługuje referencje (max 4), rozmiary pixel-based (1024x1024, 1536x1024, 1024x1536).
+**GPT Image 2** (`openai/gpt-image-2/edit`) — route edycji obrazów OpenAI przez fal.ai. Obsługuje referencje (max 4), quality control i presety image size.
 
 > **Uwaga:** Backend (`GeminiClient.cs`) warunkuje parametr `imageSize` — wysyłany tylko dla modeli Pro. Flash nie wspiera tego parametru.
 
@@ -230,7 +243,7 @@ Cztery modele (Gemini 3.1 Flash, Gemini 3 Pro, Seedream v5 Lite, GPT-Image 1.5) 
 - Upload: `POST /api/projects/{projectId}/references` (multipart, max 10MB/plik)
 - Lista: `GET /api/projects/{projectId}/references`
 - Usuwanie: `DELETE /api/references/{id}`
-- Limit: max 4 referencje per projekt (walidacja backend), max per model wg `maxReferences` w `models.ts`
+- Limit: max 10 MB per plik; per-model limity pochodzą z `maxReferences` w `models.ts`
 - Przekazywanie: jako `inline_data` parts[] w Gemini API request; jako `image_url` w fal.ai request
 - UI: panel pod canvasem z miniaturkami, widoczny tylko dla modeli wspierających referencje
 
@@ -276,9 +289,9 @@ Te endpointy obsługują backend-mediated Rhino bridge dla macOS. Używa ich ró
 | Metoda | Endpoint | Opis |
 |--------|----------|------|
 | GET | `/api/rhino/status` | Status połączenia bridge (`connected`, `lastSeenUtc`) |
-| GET | `/api/rhino/display-modes` | Tryby display mode wystawiane do UI, gdy Rhino jest podłączone |
-| GET | `/api/rhino/viewports` | Placeholder listy viewportów dla HTTP bridge |
-| GET | `/api/rhino/active-display-mode` | Placeholder aktywnego display mode dla HTTP bridge |
+| GET | `/api/rhino/display-modes` | Tryby display mode z Rhino (RPC; 503 jeśli bridge nie jest połączony) |
+| GET | `/api/rhino/viewports` | Lista viewportów z Rhino |
+| GET | `/api/rhino/active-display-mode` | Aktywny display mode viewportu |
 | POST | `/api/rhino/capture` | Kolejkuje viewport capture i zwraca `captureId` |
 | GET | `/api/rhino/bridge/next` | Long-poll endpoint używany przez plugin macOS |
 | POST | `/api/rhino/bridge/{requestId}/complete` | Kończy zakolejkowany Rhino work item |
@@ -339,14 +352,15 @@ Wszystkie zwracają `202 Accepted` z `JobDto`.
 
 | Metoda | Endpoint | Opis |
 |--------|----------|------|
+| GET | `/api/bootstrap` | Localhost session token dla UI (`X-Rhino-Bridge-Token` na mutating routes) |
 | GET | `/api/config` | Aktualna konfiguracja (`ConfigDto`) |
-| POST | `/api/config/api-key` | Legacy: ustaw klucz fal.ai (`SetApiKeyRequest`) |
-| POST | `/api/config/gemini-api-key` | Ustaw klucz Gemini (`SetGeminiApiKeyRequest`) |
-| POST | `/api/config/fal-api-key` | Ustaw klucz fal.ai (`SetFalApiKeyRequest`) |
-| POST | `/api/config/verify-gemini-key` | Weryfikuje klucz Gemini API (test call do modeli) |
-| DELETE | `/api/config/secrets/gemini` | Usuwa klucz Gemini API z DPAPI |
+| POST | `/api/config/gemini-api-key` | Ustaw klucz Gemini (`SetGeminiApiKeyRequest`) — wymaga local token |
+| POST | `/api/config/fal-api-key` | Ustaw klucz fal.ai (`SetFalApiKeyRequest`) — wymaga local token |
+| POST | `/api/config/verify-gemini-key` | Weryfikuje klucz Gemini API przez nagłówek `x-goog-api-key` |
+| DELETE | `/api/config/secrets/gemini` | Usuwa klucz Gemini API z encrypted storage |
+| DELETE | `/api/config/secrets/fal` | Usuwa klucz fal.ai z encrypted storage |
 
-> Frontend client (`src/RhinoImageStudio.UI/src/lib/api.ts`) używa aktywnie endpointów `gemini-api-key` i `fal-api-key`; metoda legacy `setApiKey` została usunięta z kodu UI.
+> Mutating config routes wymagają `X-Rhino-Bridge-Token`. UI pobiera token z `GET /api/bootstrap` (macOS browser / Vite dev) albo z `window.__RHINO_LOCAL_TOKEN` (WebView2 injection).
 
 ### Events (SSE)
 
@@ -376,7 +390,7 @@ Kontrakty zdefiniowane w `src/RhinoImageStudio.Shared/Contracts/Contracts.cs`.
   prompt: string;
   sourceCaptureId?: Guid;
   parentGenerationId?: Guid;
-  model?: string;              // "gemini-3.1-flash-image-preview" | "gemini-3-pro-image-preview" | "fal-ai/bytedance/seedream/v5/lite/edit" | "fal-ai/gpt-image-1.5/edit"
+  model?: string;              // "gemini-3.1-flash-image-preview" | "gemini-3-pro-image-preview" | "openai/gpt-image-2/edit" | "fal-ai/bytedance/seedream/v5/lite/edit" | "fal-ai/gpt-image-1.5/edit"
   aspectRatio?: string;        // "1:1", "16:9", ...
   resolution?: string;         // "1K", "2K", "4K"
   numImages: number;           // default 1
@@ -457,7 +471,7 @@ Kontrakty zdefiniowane w `src/RhinoImageStudio.Shared/Contracts/Contracts.cs`.
   thumbnailUrl?: string;
   width: number;
   height: number;
-  displayModeName: string;     // nazwa trybu użytego przy przechwyceniu (np. "Shaded", "Wireframe", "Rendered")
+  displayMode: DisplayMode;    // tryb użyty przy przechwyceniu (np. Shaded, Rendered)
   viewName?: string;
   createdAt: DateTime;
 }
@@ -512,10 +526,10 @@ Dane przechowywane w SQLite via Entity Framework Core. Plik bazy: `%LOCALAPPDATA
 | Tabela | Kolumny | Opis |
 |--------|---------|------|
 | **Projects** | `Id`, `Name`, `IsPinned`, `CreatedAt`, `UpdatedAt` | Kontener na pracę użytkownika |
-| **Captures** | `Id`, `ProjectId`, `ViewName`, `Width`, `Height`, `ImageUrl`, `ThumbnailUrl`, `CreatedAt`, `CameraJson`, `StyleName` | Przechwycony obraz z viewportu Rhino |
-| **Generations** | `Id`, `ProjectId`, `Prompt`, `ImageUrl`, `ThumbnailUrl`, `Width`, `Height`, `ParametersJson`, `IsArchived`, `ArchivedAt`, `ParentGenerationId`, `CreatedAt` | Wynik operacji AI (soft-delete via `IsArchived`) |
+| **Captures** | `Id`, `ProjectId`, `FilePath`, `ThumbnailPath`, `Width`, `Height`, `DisplayMode`, `ViewName`, `CreatedAt`, `CameraPosition`, `CameraTarget`, `CameraLens` | Przechwycony obraz z viewportu Rhino |
+| **Generations** | `Id`, `ProjectId`, `ParentGenerationId`, `SourceCaptureId`, `Stage`, `Prompt`, `NegativePrompt`, `ParametersJson`, `FilePath`, `ThumbnailPath`, `Width`, `Height`, `Seed`, `Azimuth`, `Elevation`, `Zoom`, `FalRequestId`, `ModelId`, `IsArchived`, `ArchivedAt`, `CreatedAt` | Wynik operacji AI (soft-delete via `IsArchived`) |
 | **ReferenceImages** | `Id`, `ProjectId`, `OriginalFileName`, `FilePath`, `ThumbnailPath`, `CreatedAt` | Obrazy referencyjne uploadowane przez użytkownika |
-| **Jobs** | `Id`, `ProjectId`, `Type`, `Status`, `Progress`, `ResultGenerationId`, `ErrorMessage`, `CreatedAt`, `CompletedAt`, `ParametersJson` | Zadanie w kolejce przetwarzania |
+| **Jobs** | `Id`, `ProjectId`, `Type`, `Status`, `Progress`, `ResultId`, `ProviderModelId`, `FalRequestId`, `ErrorMessage`, `CreatedAt`, `StartedAt`, `CompletedAt`, `RequestJson` | Zadanie w kolejce przetwarzania |
 
 Indeks kompozytowy `(ProjectId, IsArchived)` na tabeli Generations optymalizuje filtrowanie aktywnych/zarchiwizowanych generacji.
 

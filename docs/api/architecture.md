@@ -1,6 +1,6 @@
 # System Architecture
 
-Rhino Image Studio is a hybrid system combining a desktop CAD environment with a modern web stack (.NET 8 + React). The Windows and macOS plug-ins share the backend and UI, but use different Rhino bridge implementations.
+AI Image Studio is a hybrid system combining a desktop CAD environment with a modern web stack (.NET 8 + React). The Windows and macOS plug-ins share the backend and UI, but use different Rhino bridge implementations.
 
 ## Component Diagram
 
@@ -13,7 +13,7 @@ graph TD
     MacPlugin -- HTTP long-poll bridge --> Backend[Backend .NET 8]
     WinPlugin --> RhinoCommon[RhinoCommon shared lib]
     MacPlugin --> RhinoCommon
-    RhinoCommon -- Capture Viewport --> RhinoAPI[RhinoCommon API]
+    RhinoCommon -- RhinoView.CaptureToBitmap --> RhinoAPI[RhinoCommon API]
 
     UI -- HTTP/SSE --> Backend
     Backend -- REST --> FalAI[Fal.ai API]
@@ -36,15 +36,26 @@ graph TD
 
 Display mode names use `DisplayModeMapping` in `RhinoImageStudio.Shared` — single map between enums and Rhino English names.
 
+### Official RhinoCommon references
+
+The Rhino-facing implementation is based on these McNeel APIs:
+
+| Area | Official reference | Used in this project |
+|------|--------------------|----------------------|
+| Namespaces | [RhinoCommon API](https://developer.rhino3d.com/api/rhinocommon/) | `Rhino.Commands`, `Rhino.Display`, `Rhino.PlugIns`, `Rhino.UI` |
+| View capture | [Rhino.Display.RhinoView](https://developer.rhino3d.com/api/rhinocommon/rhino.display.rhinoview) | `RhinoView.CaptureToBitmap(Size)` and `RhinoView.CaptureToBitmap(Size, DisplayModeDescription)` |
+| UI-thread dispatch | [RhinoApp.InvokeOnUiThread](https://developer.rhino3d.com/api/rhinocommon/rhino.rhinoapp/invokeonuithread) | `RhinoUiThread.RunAsync<T>` |
+| Plug-in lifecycle | [Rhino.PlugIns.PlugIn](https://developer.rhino3d.com/api/rhinocommon/rhino.plugins.plugin) | `PlugInLoadTime`, `OnLoad`, command registration |
+
 ### 1. Rhino Plugins
 
 #### Windows Plugin (`src/RhinoImageStudio.Plugin`)
 
 - **Technology**: .NET Framework 4.8.
 - **Responsibilities**:
-  - Registering commands (`RhinoImageStudio`).
+  - Registering commands (`ImageStudio`, `ShowImageStudio`, `ImageStudioCapture`).
   - Creating the docked panel.
-  - Capturing the viewport (`ViewCapture`).
+  - Capturing the viewport (`RhinoView.CaptureToBitmap`).
   - Hosting the React UI through WebView2.
 
 #### Windows RhinoBridge (WebView2 JS Bridge)
@@ -62,9 +73,9 @@ The `RhinoBridge` object is exposed to JavaScript through `WebView2.AddHostObjec
 | `SetActiveViewport` | `(name) → bool` | Activates a viewport by name |
 | `ZoomSelected` | `() → void` | Zoom to selected objects |
 | `ZoomExtents` | `() → void` | Zoom to all objects |
-| `RunCommand` | `(command) → void` | Runs an arbitrary Rhino command |
+| `RunCommand` | `(command) → void` | Scripts a Rhino command through `RhinoApp.RunScript(command, false)`; intended for controlled UI actions. |
 
-All Rhino-touching methods are dispatched onto the UI thread via `RhinoUiThread.RunAsync<T>` (no `.Result` on the UI thread).
+Rhino API work is posted through `RhinoUiThread.RunAsync<T>` and `RhinoApp.InvokeOnUiThread`. The WebView2 host-object methods remain synchronous at the JavaScript boundary, so the implementation blocks on completed tasks with `.GetAwaiter().GetResult()` after queuing Rhino work.
 
 Implementation delegates capture to `RhinoImageStudio.Plugin.RhinoCommon.ViewportCaptureService`.
 
@@ -86,11 +97,11 @@ macOS does not support the Windows WebView2/COM bridge. The macOS path replaces 
 1. React calls HTTP endpoints under `/api/rhino/*` (or uses explicit HTTP bridge in `rhino.ts`).
 2. `RhinoBridgeService` queues work items (bounded channel, max 10).
 3. `MacRhinoBridgeClient` long-polls `GET /api/rhino/bridge/next` with header `X-Rhino-Bridge-Token`.
-4. The plug-in executes RhinoCommon work on the Rhino UI thread.
+4. The plug-in executes viewport capture on the Rhino UI thread; display/query RPCs currently call the shared RhinoCommon query helpers directly.
 5. Results are posted to `POST /api/rhino/bridge/{requestId}/complete`.
 6. Captures are uploaded through `CaptureUploadClient` → `/api/captures`.
 
-Bridge token is stored in `%LOCALAPPDATA%/RhinoImageStudio/bridge.token` (see [Security model](../engineering/security.md)).
+Bridge token is stored under the current user's local application data directory in `RhinoImageStudio/bridge.token` (see [Security model](../engineering/security.md)).
 
 ### 2. Backend (`src/RhinoImageStudio.Backend`)
 - **Technology**: ASP.NET Core 8.0.
@@ -122,7 +133,7 @@ Bridge token is stored in `%LOCALAPPDATA%/RhinoImageStudio/bridge.token` (see [S
 - **RhinoCommon**: shared capture/upload between Windows and macOS plugins.
 
 ### 3. Frontend UI (`src/RhinoImageStudio.UI`)
-- **Technology**: React 18, Vite 5, TypeScript 5.4, Tailwind CSS 3.4.
+- **Technology**: React 18, Vite 6, TypeScript 5.4, Tailwind CSS 3.4.
 - **Package manager**: pnpm (with `node-linker=hoisted`).
 - **Typography**: Geist Mono (the only font — monospace, hierarchy via weights and sizes).
 - **Responsibilities**:
@@ -185,7 +196,7 @@ Extra utility tokens: `--radius: 0rem` (sharp edges, zero rounding).
 <div className="bg-card hover:bg-card-hover">Card</div>
 ```
 
-Full spec in the Design System section above and in `CLAUDE.md`.
+Full spec in the Design System section above.
 
 ## AI Model Configuration
 
@@ -229,6 +240,7 @@ interface ModelCapabilities {
 | **Gemini 3 Pro** | Gemini | 1K, 2K, 4K | 10 ratios (standard) | Max 11 | Max 8 | – |
 | **Seedream v5 Lite** | fal.ai | Auto 2K/3K + presets | 8 presets | Max 9 | – | – |
 | **GPT-Image 1.5** | fal.ai | Pixel-based | 4 options | Max 4 | – | – |
+| **GPT Image 2** | fal.ai | Presets | 7 options | Max 4 | – | – |
 | **Qwen Multi-Angle** | fal.ai | – | – | – | – | Multi-angle |
 | **Topaz Upscale** | fal.ai | – | – | – | – | Upscale |
 
@@ -236,6 +248,7 @@ interface ModelCapabilities {
 **Gemini 3 Pro** (`gemini-3-pro-image-preview`) — higher quality, standard AR (10 ratios). Max 14 images per request.
 **Seedream v5 Lite** (`fal-ai/bytedance/seedream/v5/lite/edit`) — ByteDance, image editing up to 3K. Supports references (max 9), size presets (Auto 2K/3K, square, portrait, landscape).
 **GPT-Image 1.5** (`fal-ai/gpt-image-1.5/edit`) — OpenAI, editing with quality/fidelity controls. Supports references (max 4), pixel-based sizes (1024x1024, 1536x1024, 1024x1536).
+**GPT Image 2** (`openai/gpt-image-2/edit`) — OpenAI image editing route through fal.ai. Supports references (max 4), quality control and image-size presets.
 
 > **Note:** The backend (`GeminiClient.cs`) gates the `imageSize` parameter — sent only for Pro models. Flash doesn't support this parameter.
 
@@ -246,7 +259,7 @@ Four models (Gemini 3.1 Flash, Gemini 3 Pro, Seedream v5 Lite, GPT-Image 1.5) su
 - Upload: `POST /api/projects/{projectId}/references` (multipart, max 10 MB/file)
 - List: `GET /api/projects/{projectId}/references`
 - Delete: `DELETE /api/references/{id}`
-- Limit: max 4 references per project (backend validation), per-model max from `maxReferences` in `models.ts`
+- Limit: max 10 MB per file; per-model caps come from `maxReferences` in `models.ts`
 - Transport: as `inline_data` parts[] in Gemini API requests; as `image_url` in fal.ai requests
 - UI: panel below the canvas with thumbnails, visible only for models that support references
 
@@ -395,7 +408,7 @@ Contracts defined in `src/RhinoImageStudio.Shared/Contracts/Contracts.cs`.
   prompt: string;
   sourceCaptureId?: Guid;
   parentGenerationId?: Guid;
-  model?: string;              // "gemini-3.1-flash-image-preview" | "gemini-3-pro-image-preview" | "fal-ai/bytedance/seedream/v5/lite/edit" | "fal-ai/gpt-image-1.5/edit"
+  model?: string;              // "gemini-3.1-flash-image-preview" | "gemini-3-pro-image-preview" | "openai/gpt-image-2/edit" | "fal-ai/bytedance/seedream/v5/lite/edit" | "fal-ai/gpt-image-1.5/edit"
   aspectRatio?: string;        // "1:1", "16:9", ...
   resolution?: string;         // "1K", "2K", "4K"
   numImages: number;           // default 1
@@ -476,7 +489,7 @@ Contracts defined in `src/RhinoImageStudio.Shared/Contracts/Contracts.cs`.
   thumbnailUrl?: string;
   width: number;
   height: number;
-  displayModeName: string;     // mode used at capture time (e.g. "Shaded", "Wireframe", "Rendered")
+  displayMode: DisplayMode;    // mode used at capture time (e.g. Shaded, Rendered)
   viewName?: string;
   createdAt: DateTime;
 }
@@ -531,8 +544,8 @@ Data is stored in SQLite via Entity Framework Core. Database file: `%LOCALAPPDAT
 | Table | Columns | Description |
 |-------|---------|-------------|
 | **Projects** | `Id`, `Name`, `IsPinned`, `CreatedAt`, `UpdatedAt` | User work container |
-| **Captures** | `Id`, `ProjectId`, `ViewName`, `Width`, `Height`, `ImageUrl`, `ThumbnailUrl`, `CreatedAt`, `CameraJson`, `StyleName` | Captured Rhino viewport image |
-| **Generations** | `Id`, `ProjectId`, `Prompt`, `ImageUrl`, `ThumbnailUrl`, `Width`, `Height`, `ParametersJson`, `IsArchived`, `ArchivedAt`, `ParentGenerationId`, `CreatedAt` | AI operation result (soft-delete via `IsArchived`) |
+| **Captures** | `Id`, `ProjectId`, `FilePath`, `ThumbnailPath`, `Width`, `Height`, `DisplayMode`, `ViewName`, `CreatedAt`, `CameraPosition`, `CameraTarget`, `CameraLens` | Captured Rhino viewport image |
+| **Generations** | `Id`, `ProjectId`, `ParentGenerationId`, `SourceCaptureId`, `Stage`, `Prompt`, `NegativePrompt`, `ParametersJson`, `FilePath`, `ThumbnailPath`, `Width`, `Height`, `Seed`, `Azimuth`, `Elevation`, `Zoom`, `FalRequestId`, `ModelId`, `IsArchived`, `ArchivedAt`, `CreatedAt` | AI operation result (soft-delete via `IsArchived`) |
 | **ReferenceImages** | `Id`, `ProjectId`, `OriginalFileName`, `FilePath`, `ThumbnailPath`, `CreatedAt` | User-uploaded reference images |
 | **Jobs** | `Id`, `ProjectId`, `Type`, `Status`, `Progress`, `ResultGenerationId`, `ProviderModelId`, `ErrorMessage`, `CreatedAt`, `CompletedAt`, `ParametersJson` | Job in the processing queue |
 

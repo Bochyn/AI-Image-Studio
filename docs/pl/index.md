@@ -1,6 +1,6 @@
 # Dokumentacja AI Image Studio
 
-Witamy w dokumentacji **AI Image Studio** — wtyczki do Rhinoceros 8 (Windows + macOS) z generatywną AI w workflow architekta.
+Witamy w dokumentacji **AI Image Studio** — wtyczki do Rhinoceros 8 (Windows + macOS) z AI-assisted image generation w workflow architekta.
 
 > English: [`docs/`](../index.md)
 

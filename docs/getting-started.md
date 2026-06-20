@@ -8,15 +8,14 @@ To run the application, your machine must meet the following requirements:
 
 - **Operating system**: Windows 10 or 11. A macOS Rhino 8 build is available separately; see [macOS Plugin Setup](macos.md).
 - **Software**: [Rhinoceros 8](https://www.rhino3d.com/) (up to date).
-- **Gemini API key**: An account at [Google AI Studio](https://aistudio.google.com/) (required for Gemini 3.1 Flash, Gemini 3 Pro, Seedream v5 Lite).
-- **fal.ai API key**: An account at [fal.ai](https://fal.ai/) (required for Pan and Upscale).
-- **OpenAI API key**: An account at [OpenAI Platform](https://platform.openai.com/) (required for GPT-Image 1.5 Edit).
+- **Gemini API key**: An account at [Google AI Studio](https://aistudio.google.com/) (required for Gemini 3.1 Flash and Gemini 3 Pro).
+- **fal.ai API key**: An account at [fal.ai](https://fal.ai/) (required for Seedream, GPT Image 1.5/2, Pan and Upscale).
 
 ### For developers (building from source)
 You'll additionally need:
 - **[.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)** (for the backend and the macOS plug-in; the Windows plug-in builds against .NET Framework 4.8).
-- **[Node.js 18+](https://nodejs.org/)** (for the React UI).
-- **pnpm** (recommended package manager for the UI).
+- **[Node.js 22.x](https://nodejs.org/)** (for the React UI; matches CI).
+- **pnpm 11.x** (recommended package manager for the UI).
 - **Git** (to clone the repository).
 
 ---
@@ -34,7 +33,7 @@ The currently recommended path is to build from source (see section 3). A `.rhi`
 ### Step 1: Clone the repository
 ```bash
 git clone <repo-url>
-cd "AI Image Studio"
+cd AI-Image-Studio
 ```
 
 ### Step 2: Build Backend and Windows Plugin (C#)
@@ -50,7 +49,7 @@ This produces:
 For the macOS Rhino 8 plug-in, use the separate macOS solution and installer:
 
 ```bash
-cd /Users/mateuszbochynski/Developer/AI-Image-Studio
+cd AI-Image-Studio
 
 DOTNET_BIN=/opt/homebrew/opt/dotnet@8/libexec/dotnet \
 DOTNET_ROOT=/opt/homebrew/opt/dotnet@8/libexec \
@@ -76,10 +75,10 @@ The system has two parts that must run at the same time.
 
 ### Step 1: Start the Backend
 The backend handles all AI communication. It must run in the background.
-```bash
-# In a new terminal window:
-cd "D:\Rhino Image Studio\build\Debug\net8.0-windows"
-dotnet RhinoImageStudio.Backend.dll
+```powershell
+# In a new terminal window from the repository root:
+dotnet build .\src\RhinoImageStudio.sln
+.\build\Debug\net8.0-windows\RhinoImageStudio.Backend.exe
 ```
 You should see: `Now listening on http://127.0.0.1:17532`. **Keep this window open.**
 
@@ -92,7 +91,7 @@ You should see: `Now listening on http://127.0.0.1:17532`. **Keep this window op
 ### Step 3: Open the Panel
 Run the command:
 ```
-RhinoImageStudio
+ImageStudio
 ```
 The application's side panel will appear.
 
@@ -100,24 +99,20 @@ The application's side panel will appear.
 
 ## 5. Configuring API Keys
 
-AI Image Studio requires API keys for every AI provider you want to use.
+AI Image Studio requires provider keys for the model families you want to use. The Settings UI stores only Gemini and fal.ai keys.
 
-### Gemini API Key (required for Gemini 3.1 Flash / Gemini 3 Pro / Seedream v5 Lite)
+### Gemini API Key (required for Gemini 3.1 Flash / Gemini 3 Pro)
 1. Sign in to [Google AI Studio](https://aistudio.google.com/) and generate an API key.
 2. In the AI Image Studio panel, open the **Settings** tab (gear icon).
 3. Paste the key into **Gemini API Key**.
 4. Click **Save**.
 
-### fal.ai API Key (required for Pan / Upscale)
+### fal.ai API Key (required for Seedream / GPT Image 1.5 / GPT Image 2 / Pan / Upscale)
 1. Sign in to [fal.ai](https://fal.ai/) and generate an API key.
 2. In the AI Image Studio panel, open **Settings**.
 3. Paste the key into **fal.ai API Key**.
 4. Click **Save**.
 
-### OpenAI API Key (required for GPT-Image 1.5 Edit)
-1. Sign in to [OpenAI Platform](https://platform.openai.com/) and generate an API key.
-2. In the AI Image Studio panel, open **Settings**.
-3. Paste the key into **OpenAI API Key**.
-4. Click **Save**.
+OpenAI-branded image models in AI Image Studio are routed through fal.ai endpoints. There is no separate OpenAI API key field in the application.
 
 You're set. Continue with the [Basics Guide](guides/basics.md).

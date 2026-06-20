@@ -1,6 +1,6 @@
 # Supported AI Models
 
-Rhino Image Studio uses several AI models for image generation and processing. Each model has its own use case and parameters.
+AI Image Studio uses several AI models for image generation and processing. Each model has its own use case and parameters.
 
 ## Model Overview
 
@@ -10,6 +10,7 @@ Rhino Image Studio uses several AI models for image generation and processing. E
 | Gemini 3 Pro | Google | Generate / Edit / Inpainting | Aspect Ratio, Resolution | Max 11 | Max 8 |
 | Seedream v5 Lite | fal.ai (ByteDance) | Image editing | Image Size presets | Max 9 | – |
 | GPT-Image 1.5 | fal.ai (OpenAI) | Image editing | Quality, Fidelity | Max 4 | – |
+| GPT Image 2 | fal.ai (OpenAI route) | Image editing | Quality, Image Size presets | Max 4 | – |
 | Qwen Multi-Angle | fal.ai | Camera angle change | Rotation, Elevation, Zoom | – | – |
 | Topaz Upscale | fal.ai | Upscaling | Factor, Model type | – | – |
 
@@ -203,6 +204,55 @@ A fal.ai wrapper around OpenAI GPT-Image 1 with quality and fidelity controls.
 
 ---
 
+## GPT Image 2 (Edit)
+
+**ID:** `openai/gpt-image-2/edit`
+**Provider:** fal.ai (OpenAI route)
+**Modes:** Generate, Refine (Edit)
+
+Latest OpenAI image editing route exposed through fal.ai. It uses fal.ai credentials in AI Image Studio; there is no separate OpenAI API key field.
+
+### Image Size
+
+| API value | Proportions |
+|-----------|-------------|
+| `auto` | Match source |
+| `square_hd` | 1:1 HD |
+| `square` | 1:1 |
+| `portrait_4_3` | 3:4 |
+| `portrait_16_9` | 9:16 |
+| `landscape_4_3` | 4:3 |
+| `landscape_16_9` | 16:9 |
+
+### Quality
+
+| Value | Description |
+|-------|-------------|
+| `low` | Fast draft |
+| `medium` | Balanced |
+| `high` | Highest quality |
+
+### Capabilities
+
+- **Quality control** — 3 quality tiers
+- **Reference Images** — up to 4 via `image_urls`
+- Generate / Refine mode support
+- No support for: seed, strength, negative prompt, masks
+
+### API Payload
+
+```json
+{
+  "prompt": "...",
+  "image_urls": ["source_url"],
+  "image_size": "square_hd",
+  "quality": "high",
+  "num_images": 1
+}
+```
+
+---
+
 ## Qwen Multi-Angle
 
 **ID:** `fal-ai/qwen-image-edit-2511-multiple-angles`
@@ -276,7 +326,7 @@ Professional image upscaling powered by Topaz Labs technology. Adds detail while
 
 ## Reference Images
 
-Both Gemini models (Flash and Pro) support **reference images** — additional images that the AI model uses as visual context during generation.
+Gemini, Seedream and GPT Image models support **reference images** — additional images that the AI model uses as visual context during generation. Exact limits come from `src/RhinoImageStudio.UI/src/lib/models.ts`, the UI source of truth for model capabilities.
 
 ### Use cases
 - Materials and textures (e.g. wood, marble)
@@ -300,7 +350,7 @@ Both Gemini models (Flash and Pro) support **reference images** — additional i
 
 ### Technical details
 - Upload: `POST /api/projects/{projectId}/references` (multipart)
-- References are sent as `inline_data` parts[] in the Gemini API request
+- References are sent as `inline_data` parts[] in Gemini API requests and as `image_urls` in fal.ai requests
 - Files are stored under `%LOCALAPPDATA%/RhinoImageStudio/data/references/`
 
 ---
@@ -329,6 +379,7 @@ Both Gemini models support **mask drawing** — selecting specific image regions
 | Gemini 3 Pro | 8 | 14 | source(1) + overlay(1) + refs ≤ 14 |
 | Seedream | 0 | – | Masks not supported |
 | GPT-Image 1.5 | 0 | – | Masks not supported (prompt engineering) |
+| GPT Image 2 | 0 | – | Masks not supported |
 | fal.ai (other) | 0 | – | Masks not supported |
 
 In the 2-image overlay pipeline, masks always occupy **2 slots** (source + overlay) regardless of how many mask layers there are. References share the budget with this fixed cost. The function `getAvailableMaskSlots(modelId, refCount)` returns `maxMaskLayers` when `2 + refCount ≤ maxTotalImages`, otherwise `0`.
@@ -378,7 +429,7 @@ In the 2-image overlay pipeline, masks always occupy **2 slots** (source + overl
 - Save under: Settings → Gemini API Key
 
 ### fal.ai
-- Required for: Generate/Refine (Seedream, GPT-Image), Pan (Multi-Angle), Upscale
+- Required for: Generate/Refine (Seedream, GPT Image 1.5/2), Pan (Multi-Angle), Upscale
 - Get a key: [fal.ai Console](https://fal.ai/dashboard)
 - Save under: Settings → fal.ai API Key
 

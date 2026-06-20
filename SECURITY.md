@@ -4,7 +4,12 @@ AI Image Studio is source-available for noncommercial use. Treat everything comm
 
 ## Reporting Security Issues
 
-Do not open a public issue containing secrets, API keys, exploit details or private user data. Use a private GitHub security advisory when available, or contact the maintainers privately.
+Do not open a public issue containing secrets, API keys, exploit details or private user data.
+
+Preferred reporting path:
+
+1. Use GitHub's private security advisory flow for this repository: `https://github.com/Bochyn/AI-Image-Studio/security/advisories/new`.
+2. If advisories are unavailable, open a public issue with a minimal title such as "Security contact requested" and no exploit details, then move the discussion to a private channel with the maintainer.
 
 ## Secrets and Local Data
 
@@ -30,3 +35,7 @@ rg -l -i --hidden --glob '!**/.git/**' --glob '!**/node_modules/**' --glob '!**/
 ```
 
 The second command is a candidate-file scan. Inspect matches carefully and do not print real secret values in public logs.
+
+## Supported Versions
+
+This project is in active pre-release development. Security fixes are applied to the default branch and release branches that are explicitly marked as supported.

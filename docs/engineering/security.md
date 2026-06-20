@@ -1,6 +1,6 @@
 # Security Model
 
-Rhino Image Studio is **local-first**: it runs a backend on `localhost`, stores projects on disk, and proxies AI provider APIs so keys never ship to the React bundle. This document describes the threat model and controls — for reporters, see [SECURITY.md](../../SECURITY.md).
+AI Image Studio is **local-first**: it runs a backend on `localhost`, stores projects on disk, and proxies AI provider APIs so keys never ship to the React bundle. This document describes the threat model and controls — for reporters, see [SECURITY.md](../../SECURITY.md).
 
 ## Threat model (practical)
 

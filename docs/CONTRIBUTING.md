@@ -4,7 +4,7 @@ Thank you for considering a contribution. This project is a cross-platform deskt
 
 ## Before you start
 
-1. Read [Engineering overview](docs/engineering/overview.md) for architecture context.
+1. Read [Engineering overview](engineering/overview.md) for architecture context.
 2. Check open [GitHub Issues](https://github.com/Bochyn/AI-Image-Studio/issues) for duplicates.
 3. For large changes, open an issue or discussion first.
 
@@ -39,8 +39,8 @@ cd src && dotnet build RhinoImageStudio.Mac.sln    # macOS
 
 Detailed guides:
 
-- [Getting started](docs/getting-started.md)
-- [macOS plugin](docs/macos.md)
+- [Getting started](getting-started.md)
+- [macOS plugin](macos.md)
 
 ## Project conventions
 
@@ -86,12 +86,12 @@ git diff --exit-code src/RhinoImageStudio.Backend/wwwroot
 
 4. Open a PR with:
    - Conventional title: `type(scope): Summary in imperative mood`
-   - Summary + test plan (see [PR template](.github/pull_request_template.md))
+   - Summary + test plan (see [PR template](../.github/pull_request_template.md))
 5. Ensure CI passes (Windows plugin, macOS plugin, frontend).
 
 ## Security
 
-- Never commit secrets — see [SECURITY.md](SECURITY.md).
+- Never commit secrets — see [SECURITY.md](../SECURITY.md).
 - Run the candidate secret scan before pushing sensitive branches.
 - Report vulnerabilities privately — do not open public issues with exploit details.
 
@@ -101,11 +101,11 @@ When your change affects behavior:
 
 | Change type | Update |
 |-------------|--------|
-| API endpoint | `docs/api/architecture.md` |
-| Bridge / plugin | `docs/engineering/cross-platform-bridge.md` |
-| Security | `docs/engineering/security.md` |
-| User workflow | `docs/guides/` + `docs/pl/przewodniki/` |
-| Engineering decisions | `docs/engineering/code-quality.md` or new engineering doc |
+| API endpoint | `api/architecture.md` |
+| Bridge / plugin | `engineering/cross-platform-bridge.md` |
+| Security | `engineering/security.md` |
+| User workflow | `guides/` + `pl/przewodniki/` |
+| Engineering decisions | `engineering/code-quality.md` or new engineering doc |
 
 ## Code review expectations
 
@@ -119,8 +119,8 @@ Reviewers will check:
 
 ## Questions
 
-Open a GitHub Issue with the `question` label or refer to [Troubleshooting](docs/guides/troubleshooting.md).
+Open a GitHub Issue with the `question` label or refer to [Troubleshooting](guides/troubleshooting.md).
 
 ## License
 
-By contributing, you agree that your contributions may be licensed by Mateusz Bochyński under the project license and under separate commercial licenses. See [LICENSE](../LICENSE) for details.
+External contributions are accepted only when the contributor agrees that the contribution is provided under the project license and may also be included in separately licensed commercial editions. If a change is substantial, maintainers may request a signed CLA or DCO sign-off before merge. See [LICENSE](../LICENSE) for details.

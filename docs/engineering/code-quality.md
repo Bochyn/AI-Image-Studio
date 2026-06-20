@@ -1,12 +1,12 @@
 # Code Quality & Audit
 
-This document summarizes a **structured code audit** of Rhino Image Studio and the remediation work that followed. It is written for reviewers who want to understand code health, technical debt, and engineering maturity — not as a raw implementation checklist.
+This document summarizes a **structured code audit** of AI Image Studio and the remediation work that followed. It is written for reviewers who want to understand code health, technical debt, and engineering maturity — not as a raw implementation checklist.
 
 Raw planning notes remain in `docs/plans/` for historical reference.
 
 ## Executive summary
 
-| Area | Before audit | After remediation (PR #22) |
+| Area | Before audit | After remediation |
 |------|--------------|------------------------------|
 | Backend structure | 1000+ line `Program.cs`, mixed concerns | Slim bootstrap + `Endpoints/` + `Infrastructure/` |
 | SSE events | Single channel — only one client received events | Per-subscriber channels (proper pub/sub) |
@@ -28,7 +28,7 @@ Two parallel audits were performed in February 2026:
 | **Backend** | `RhinoImageStudio.Backend`, `Shared` | Security, SSE, god classes, HttpClient lifecycle, storage |
 | **Frontend** | `RhinoImageStudio.UI` | Types vs API contract, component size, UX/a11y gaps |
 
-Thermos branch review (macOS feature branch) identified additional **merge blockers**: bridge security, contract lies between platforms, UI-thread races on Windows.
+The macOS branch review identified additional **merge blockers**: bridge security, contract lies between platforms, UI-thread races on Windows.
 
 ## Critical findings (and fixes)
 
@@ -129,12 +129,10 @@ Transparency matters for senior reviews. These items are **known** and documente
 | Inspector `any` types (9 ESLint warnings) | Low | Narrow to `GeneratePayload` union |
 | macOS `MacOpenStudioCommand` sync-over-async | Low | Prefer async command pattern |
 
-## How to cite this in a portfolio or CV
+## Reviewer entry points
 
-> Built a cross-platform Rhino 8 AI plugin (.NET + React) with a custom macOS HTTP bridge, local job queue, and Gemini/fal.ai integration. Led a structured code audit: fixed SSE pub/sub, secured the bridge, extracted shared RhinoCommon library, added tests and CI — ~13k LOC, 6 projects.
+For a concise technical review path, start with:
 
-Link reviewers to:
-
-1. [Project overview](overview.md) — narrative
-2. [Cross-platform bridge](cross-platform-bridge.md) — deepest technical story
-3. Pull request `#22` on GitHub — concrete diff
+1. [Project overview](overview.md) — narrative and system boundaries
+2. [Cross-platform bridge](cross-platform-bridge.md) — deepest Rhino integration story
+3. [Testing & CI](testing-and-ci.md) — verification matrix

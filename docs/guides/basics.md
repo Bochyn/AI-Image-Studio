@@ -4,7 +4,7 @@ Learn how to turn a Rhino viewport into an AI visualization in a few simple step
 
 ## Interface Overview
 
-The Rhino Image Studio panel has these main sections:
+The AI Image Studio panel has these main sections:
 1. **Canvas (Preview)** — main area showing the captured viewport or generated image.
 2. **Controls (Inspector panel)** — on the right (or bottom), where you type prompts and tweak parameters.
 3. **History** — strip of thumbnails of past generations.
@@ -14,7 +14,7 @@ The Rhino Image Studio panel has these main sections:
 
 ## Home Page
 
-When you launch Rhino Image Studio you land on the home page with two tabs: **My Projects** and **Generations**.
+When you launch AI Image Studio you land on the home page with two tabs: **My Projects** and **Generations**.
 
 ### "My Projects" Tab
 
@@ -37,7 +37,7 @@ Home-page operations (pin, rename, delete, load errors) are signaled with **toas
 
 ## Settings
 
-To use Rhino Image Studio, you must configure API keys for the AI models you want to use.
+To use AI Image Studio, you must configure API keys for the AI models you want to use.
 
 ### Opening Settings
 
@@ -48,10 +48,9 @@ Click the **gear** icon in the top right of the nav bar. The Settings page opens
 The Settings page has fields for the API keys:
 
 - **Gemini API Key** — required for Gemini 3.1 Flash and Gemini 3 Pro. Type the key, click **Save**, then **Verify** to validate it.
-- **fal.ai API Key** — required for Seedream, Qwen Multi-Angle and Topaz Upscale. Type the key and save.
-- **OpenAI API Key** — required for GPT-Image 1.5 (served via fal.ai). Type the key and save.
+- **fal.ai API Key** — required for Seedream, GPT Image 1.5/2, Qwen Multi-Angle and Topaz Upscale. Type the key and save.
 
-Each key is stored locally on the machine using Windows DPAPI — it is never sent anywhere outside the destination API.
+Keys are stored locally in the application's encrypted storage. They are never committed to the repository and are sent only to the target provider API.
 
 ### Data Path
 
@@ -145,7 +144,7 @@ Click the columns icon in the toolbar again.
 Inpainting lets you edit **specific regions** of an image with masks. Each mask has its own instruction — Gemini only edits the masked regions, the rest stays untouched.
 
 ### Requirements
-- A Gemini model (3.1 Flash or 3 Pro) — fal.ai models (Seedream, GPT-Image) don't support masks
+- A Gemini model (3.1 Flash or 3 Pro) — fal.ai image-edit models (Seedream, GPT Image 1.5/2) don't support masks
 - A capture or generation as the source
 
 ### Mask Limits
@@ -154,7 +153,7 @@ Inpainting lets you edit **specific regions** of an image with masks. Each mask 
 |-------|-----------|------------------|---------|
 | Gemini 3.1 Flash | 2 | 16 | source(1) + overlay(1) + refs ≤ 16 → max 14 references with masks |
 | Gemini 3 Pro | 8 | 14 | source(1) + overlay(1) + refs ≤ 14 → max 11 references with masks |
-| fal.ai (Seedream, GPT-Image) | 0 | – | Masks not supported |
+| fal.ai (Seedream, GPT Image 1.5/2) | 0 | – | Masks not supported |
 
 All masks are composited into a single overlay image (original with colored masks) — they don't take separate slots. The image budget is: `2 (source + overlay) + references ≤ maxTotalImages`.
 
@@ -233,6 +232,7 @@ The maximum number of reference images depends on the chosen model (source: `mod
 | Gemini 3 Pro | 11 |
 | Seedream v5 Lite | 9 |
 | GPT-Image 1.5 | 4 |
+| GPT Image 2 | 4 |
 
 > **Note:** When using inpainting masks, the image budget becomes `source(1) + overlay(1) + references ≤ maxTotalImages`, so the effective number of references can be smaller.
 
@@ -244,7 +244,7 @@ Reference images are saved **per project** and **persist between sessions** — 
 
 ## Available AI Models
 
-Rhino Image Studio supports several AI models for image generation and editing. The model is picked in the **Inspector** panel (ModelSelector) of the Studio view.
+AI Image Studio supports several AI models for image generation and editing. The model is picked in the **Inspector** panel (ModelSelector) of the Studio view.
 
 | Model | Provider | Description | Masks | References |
 |-------|----------|-------------|-------|------------|
@@ -252,12 +252,13 @@ Rhino Image Studio supports several AI models for image generation and editing. 
 | **Gemini 3 Pro (Preview)** | Google | High quality, supports 2K/4K | Yes (max 8) | Yes (max 11) |
 | **Seedream v5 Lite** | ByteDance (fal.ai) | High-quality image editing (up to 3K) | No | Yes (max 9) |
 | **GPT-Image 1.5** | OpenAI (fal.ai) | Editing with quality and fidelity controls | No | Yes (max 4) |
+| **GPT Image 2** | OpenAI route (fal.ai) | Editing with quality control and image-size presets | No | Yes (max 4) |
 
-### GPT-Image 1.5 — extra options
+### GPT Image — extra options
 
-GPT-Image 1.5 exposes two extra parameters in the Inspector:
+GPT Image models expose extra parameters in the Inspector:
 - **Quality** (Low / Medium / High) — quality of the generated image
-- **Fidelity** (Low / High) — fidelity to the source
+- **Fidelity** (Low / High) — fidelity to the source in GPT-Image 1.5
 
 ### Inspector Panel
 

@@ -1,10 +1,10 @@
 # Jakość kodu i audyt
 
-Ustrukturyzowany audyt Rhino Image Studio i remediacja — wersja skrócona. Pełna wersja EN: [Code quality & audit](../../engineering/code-quality.md).
+Ustrukturyzowany audyt AI Image Studio i remediacja — wersja skrócona. Pełna wersja EN: [Code quality & audit](../../engineering/code-quality.md).
 
 ## Podsumowanie
 
-| Obszar | Przed | Po (PR #22) |
+| Obszar | Przed | Po remediacji |
 |--------|-------|-------------|
 | Backend | God file `Program.cs` | `Endpoints/` + `Infrastructure/` |
 | SSE | Jeden kanał — gubił eventy | Pub/sub per subscriber |
@@ -36,8 +36,10 @@ F0 (blockers) → F1 (kontrakty Shared) → F2 (bridge) → F3 (backend hygiene)
 | Accessibility | Średni |
 | `any` w ESLint (9 warningów) | Niski |
 
-## Jak to opisać w CV
+## Entry points dla review
 
-> Wtyczka Rhino 8 cross-platform (.NET + React), własny HTTP bridge na macOS, kolejka jobów, Gemini/fal.ai. Audyt kodu: SSE, security bridge, RhinoCommon, testy i CI — ~13k LOC.
+- [Przegląd projektu](przeglad.md)
+- [Bridge cross-platform](most-cross-platform.md)
+- [Testy i CI](testy-i-ci.md)
 
 Raw audyty: `docs/plans/2026-02-17-*-code-audit.md`.

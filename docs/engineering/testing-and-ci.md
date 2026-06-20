@@ -1,6 +1,6 @@
 # Testing & CI
 
-How Rhino Image Studio is verified before merge and release.
+How AI Image Studio is verified before merge and release.
 
 ## CI pipeline (GitHub Actions)
 
@@ -126,7 +126,7 @@ Automated tests do not launch Rhino. Before release:
 ### Windows
 
 1. Build plugin → load `.rhp` in Rhino 8
-2. `RhinoImageStudio` command → panel opens
+2. `ImageStudio` command → panel opens
 3. Capture viewport → generation completes → SSE progress updates
 4. Mask inpainting with Gemini model
 5. Settings → save Gemini + fal keys → verify encrypted storage

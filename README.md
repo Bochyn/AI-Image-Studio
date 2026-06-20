@@ -1,6 +1,6 @@
 # AI Image Studio
 
-**AI Image Studio** is an advanced **Rhinoceros 8** plugin/workflow that brings generative AI into architectural visualization. Turn simple 3D viewports into photorealistic visualizations, variants and materials in seconds.
+**AI Image Studio** is a **Rhinoceros 8** plugin/workflow that brings AI-assisted image generation into architectural visualization. Turn Rhino viewport captures into visualization drafts, variants, material studies and targeted edits without leaving the project context.
 
 ![Status](https://img.shields.io/badge/Status-Development-orange)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS-blue)
@@ -15,7 +15,7 @@ AI Image Studio is a cross-platform Rhino 8 integration with a shared ASP.NET Co
 - **Windows**: .NET Framework 4.8 plug-in with WebView2 and COM host-object bridge.
 - **macOS**: .NET 8 plug-in with a backend-mediated HTTP bridge and browser-hosted UI.
 
-Both platforms share the same backend, database models, API contracts, AI clients and React UI. The plug-in captures the active Rhino viewport, sends it to Google Gemini, fal.ai or OpenAI through a local proxy, and returns photorealistic renders, variations and inpainted edits.
+Both platforms share the same backend, database models, API contracts, AI clients and React UI. The plug-in captures the active Rhino viewport, sends it to Google Gemini or fal.ai through a local proxy, and returns AI-assisted renders, variations and inpainted edits. OpenAI-branded image models are accessed through fal.ai routes, so the application stores only Gemini and fal.ai provider keys.
 
 | Captured Rhino viewport | Reference-driven edit |
 |---|---|
@@ -62,7 +62,7 @@ Full documentation lives in [`/docs`](docs/index.md). Polish version: [`docs/pl/
 | Windows Plugin | .NET Framework 4.8, RhinoCommon, Eto.Forms, WebView2 |
 | macOS Plugin | .NET 8, RhinoCommon, backend-mediated HTTP bridge |
 | Backend | ASP.NET Core 8.0, EF Core + SQLite, Data Protection, Minimal API |
-| Frontend | React 18, Vite 5, TypeScript 5.4, Tailwind CSS 3.4, Geist Mono |
+| Frontend | React 18, Vite 6, TypeScript 5.4, Tailwind CSS 3.4, Geist Mono |
 | AI providers | Google Gemini API, fal.ai (Seedream, GPT-Image, Qwen, Topaz) |
 
 ## Repository Layout
@@ -105,16 +105,16 @@ Install the Windows plug-in in Rhino through `PlugInManager`:
 build\Debug\net48\RhinoImageStudio.rhp
 ```
 
-Then run:
+Then run the command registered by the plug-in:
 
 ```text
-RhinoImageStudio
+ImageStudio
 ```
 
 ## Quick Start: macOS Developers
 
 ```bash
-cd /Users/mateuszbochynski/Developer/AI-Image-Studio
+cd AI-Image-Studio
 
 # Build the shared React UI into Backend/wwwroot
 cd src/RhinoImageStudio.UI
@@ -122,7 +122,7 @@ pnpm install
 pnpm run build
 
 # Build and install the macOS Rhino plug-in
-cd /Users/mateuszbochynski/Developer/AI-Image-Studio
+cd ../..
 DOTNET_BIN=/opt/homebrew/opt/dotnet@8/libexec/dotnet \
 DOTNET_ROOT=/opt/homebrew/opt/dotnet@8/libexec \
 PATH=/opt/homebrew/opt/dotnet@8/libexec:$PATH \

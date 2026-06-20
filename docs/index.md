@@ -1,6 +1,6 @@
 # AI Image Studio Documentation
 
-Welcome to the **AI Image Studio** documentation — a cross-platform Rhinoceros 8 plugin for generative AI in architectural workflows (Google Gemini, fal.ai, OpenAI).
+Welcome to the **AI Image Studio** documentation — a cross-platform Rhinoceros 8 plugin for AI-assisted architectural visualization workflows (Google Gemini and fal.ai).
 
 > Polish: [`docs/pl/`](pl/index.md)
 
